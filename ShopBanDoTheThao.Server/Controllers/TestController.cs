@@ -1,0 +1,18 @@
+using Microsoft.AspNetCore.Mvc;
+
+namespace ShopBanDoTheThao.Server.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class TestController : ControllerBase
+    {
+        [HttpGet]
+        public IActionResult Get()
+        {
+            return Ok(new { message = "API đang hoạt động!", timestamp = DateTime.UtcNow });
+        }
+    }
+}
+
+
+
