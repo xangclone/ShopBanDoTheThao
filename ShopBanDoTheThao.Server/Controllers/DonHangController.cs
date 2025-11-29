@@ -235,11 +235,33 @@ namespace ShopBanDoTheThao.Server.Controllers
                     return BadRequest(new { message = "Một số sản phẩm trong giỏ hàng không còn tồn tại hoặc đã ngừng bán" });
                 }
 
-                // Tính toán tổng tiền
+                // Tính toán tổng tiền (kiểm tra flash sale)
+                var now = DateTime.UtcNow;
+                var flashSales = await _context.FlashSale
+                    .Include(fs => fs.DanhSachSanPham)
+                    .Where(fs => fs.DangHoatDong &&
+                                fs.ThoiGianBatDau <= now &&
+                                fs.ThoiGianKetThuc >= now)
+                    .ToListAsync();
+
                 decimal tongTienSanPham = 0;
                 foreach (var item in gioHangItems)
                 {
-                    tongTienSanPham += item.SanPham.Gia * item.SoLuong;
+                    decimal giaBan = item.SanPham.Gia;
+                    
+                    // Kiểm tra flash sale
+                    foreach (var flashSale in flashSales)
+                    {
+                        var flashSaleSanPham = flashSale.DanhSachSanPham
+                            .FirstOrDefault(fsp => fsp.SanPhamId == item.SanPhamId && fsp.DangHoatDong);
+                        if (flashSaleSanPham != null)
+                        {
+                            giaBan = flashSaleSanPham.GiaFlashSale;
+                            break;
+                        }
+                    }
+                    
+                    tongTienSanPham += giaBan * item.SoLuong;
                 }
 
                 decimal giamGia = 0;
@@ -339,6 +361,24 @@ namespace ShopBanDoTheThao.Server.Controllers
 
                     // Lấy giá từ biến thể nếu có, nếu không thì dùng giá sản phẩm
                     decimal giaBan = bienThe?.Gia ?? sanPhamToUpdate.Gia;
+
+                    // Kiểm tra flash sale đang diễn ra cho sản phẩm này
+                    var flashSaleSanPham = await _context.FlashSaleSanPham
+                        .Include(fsp => fsp.FlashSale)
+                        .FirstOrDefaultAsync(fsp => fsp.SanPhamId == item.SanPhamId &&
+                                                    fsp.DangHoatDong &&
+                                                    fsp.FlashSale.DangHoatDong &&
+                                                    fsp.FlashSale.ThoiGianBatDau <= now &&
+                                                    fsp.FlashSale.ThoiGianKetThuc >= now);
+
+                    if (flashSaleSanPham != null)
+                    {
+                        // Sử dụng giá flash sale
+                        giaBan = flashSaleSanPham.GiaFlashSale;
+                        
+                        // Cập nhật số lượng đã bán trong flash sale
+                        flashSaleSanPham.SoLuongDaBan += item.SoLuong;
+                    }
 
                     var chiTiet = new Models.DonHangChiTiet
                     {
@@ -444,7 +484,7 @@ namespace ShopBanDoTheThao.Server.Controllers
         }
 
         [HttpPut("{id}/huy")]
-        public async Task<IActionResult> HuyDonHang(int id)
+        public async Task<IActionResult> HuyDonHang(int id, [FromBody] HuyDonHangRequest? request = null)
         {
             var userId = GetUserId();
             var donHang = await _context.DonHang
@@ -456,8 +496,14 @@ namespace ShopBanDoTheThao.Server.Controllers
                 return NotFound();
             }
 
+            // Chỉ cho phép hủy khi đơn hàng ở trạng thái Chờ xác nhận hoặc Đã xác nhận
+            // Không cho phép hủy khi đơn hàng đang giao, đã giao, đã hủy, hoặc hoàn trả
             if (donHang.TrangThai != "ChoXacNhan" && donHang.TrangThai != "DaXacNhan")
             {
+                if (donHang.TrangThai == "DangGiao")
+                {
+                    return BadRequest(new { message = "Không thể hủy đơn hàng đang được giao. Vui lòng liên hệ với cửa hàng nếu cần hỗ trợ." });
+                }
                 return BadRequest(new { message = "Chỉ có thể hủy đơn hàng đang chờ xác nhận hoặc đã xác nhận" });
             }
 
@@ -495,10 +541,20 @@ namespace ShopBanDoTheThao.Server.Controllers
             var trangThaiCu = donHang.TrangThai;
             donHang.TrangThai = "DaHuy";
             donHang.NgayCapNhat = DateTimeHelper.ToUtcTime(DateTimeHelper.GetVietnamTime());
+            
+            // Lưu lý do hủy nếu có
+            if (request != null && !string.IsNullOrEmpty(request.LyDoHuy))
+            {
+                donHang.LyDoHoanTra = request.LyDoHuy;
+            }
+            
             await _context.SaveChangesAsync();
 
-            // Tạo thông báo tự động
-            await Helpers.ThongBaoHelper.TaoThongBaoDonHang(_context, donHang.Id, userId, trangThaiCu, "DaHuy");
+            // Tạo thông báo tự động cho khách hàng
+            await Helpers.ThongBaoHelper.TaoThongBaoDonHang(_context, donHang.Id, userId, trangThaiCu, "DaHuy", request?.LyDoHuy);
+
+            // Tạo thông báo cho admin
+            await Helpers.ThongBaoHelper.TaoThongBaoAdminDonHang(_context, donHang.Id, "HuyDonHang", request?.LyDoHuy);
 
             // Trả về đơn hàng đã cập nhật với dữ liệu đã project
             var donHangResponse = await _context.DonHang
@@ -618,8 +674,11 @@ namespace ShopBanDoTheThao.Server.Controllers
                 donHang.NgayCapNhat = DateTimeHelper.ToUtcTime(DateTimeHelper.GetVietnamTime());
                 await _context.SaveChangesAsync();
 
-                // Tạo thông báo tự động
+                // Tạo thông báo tự động cho khách hàng
                 await Helpers.ThongBaoHelper.TaoThongBaoDonHang(_context, donHang.Id, userId, trangThaiCuHoanTra, "HoanTra");
+
+                // Tạo thông báo cho admin
+                await Helpers.ThongBaoHelper.TaoThongBaoAdminDonHang(_context, donHang.Id, "HoanTra", request.LyDo);
 
                 return Ok(new { message = "Yêu cầu hoàn trả đã được gửi thành công" });
             }
@@ -680,6 +739,12 @@ namespace ShopBanDoTheThao.Server.Controllers
         [Required]
         [MaxLength(500)]
         public string LyDo { get; set; } = string.Empty;
+    }
+
+    public class HuyDonHangRequest
+    {
+        [MaxLength(500)]
+        public string? LyDoHuy { get; set; }
     }
 
     public class CapNhatTrackingRequest

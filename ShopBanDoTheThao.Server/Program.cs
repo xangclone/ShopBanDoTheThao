@@ -59,6 +59,8 @@ builder.Services.AddAuthorization();
 
 // Register services
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<SePayService>();
+builder.Services.AddScoped<EmailService>();
 
 // Configure file upload limits
 builder.Services.Configure<FormOptions>(options =>

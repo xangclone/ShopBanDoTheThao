@@ -118,6 +118,16 @@ function DangNhap() {
                 placeholder="Nhập mật khẩu"
               />
             </div>
+            {!isAdminLogin && (
+              <div className="text-right">
+                <Link
+                  to="/quen-mat-khau"
+                  className="text-sm text-pink-600 hover:text-purple-600 font-medium transition-colors"
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading}

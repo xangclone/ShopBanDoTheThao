@@ -277,6 +277,7 @@ namespace ShopBanDoTheThao.Server.Controllers
                         d.TrangThai,
                         d.TrangThaiThanhToan,
                         d.TongTien,
+                        d.GhiChu,
                         NguoiDung = new { d.NguoiDung.Ho, d.NguoiDung.Ten, d.NguoiDung.Email }
                     })
                     .ToListAsync();
@@ -333,6 +334,7 @@ namespace ShopBanDoTheThao.Server.Controllers
                     donHang.GiamGia,
                     donHang.TongTien,
                     donHang.GhiChu,
+                    donHang.LyDoHoanTra,
                     donHang.PhuongThucGiaoHang,
                     NguoiDung = new
                     {
@@ -415,6 +417,7 @@ namespace ShopBanDoTheThao.Server.Controllers
                     donHang.GiamGia,
                     donHang.TongTien,
                     donHang.GhiChu,
+                    donHang.LyDoHoanTra,
                     donHang.PhuongThucGiaoHang,
                     NguoiDung = new
                     {
@@ -485,12 +488,18 @@ namespace ShopBanDoTheThao.Server.Controllers
                     donHang.NgayGiao = DateTime.UtcNow;
                 }
 
+                // Lưu lý do hủy nếu có
+                if (request.TrangThai == "DaHuy" && !string.IsNullOrEmpty(request.LyDoHuy))
+                {
+                    donHang.LyDoHoanTra = request.LyDoHuy;
+                }
+
                 await _context.SaveChangesAsync();
 
                 // Tạo thông báo tự động cho khách hàng
                 if (trangThaiCu != request.TrangThai)
                 {
-                    await Helpers.ThongBaoHelper.TaoThongBaoDonHang(_context, donHang.Id, donHang.NguoiDungId, trangThaiCu, request.TrangThai);
+                    await Helpers.ThongBaoHelper.TaoThongBaoDonHang(_context, donHang.Id, donHang.NguoiDungId, trangThaiCu, request.TrangThai, request.LyDoHuy);
                 }
 
                 return Ok(new { message = "Cập nhật trạng thái thành công" });
@@ -1866,6 +1875,7 @@ namespace ShopBanDoTheThao.Server.Controllers
     {
         [Required]
         public string TrangThai { get; set; } = string.Empty;
+        public string? LyDoHuy { get; set; }
     }
 
     public class CapNhatTrangThaiNguoiDungRequest
@@ -2247,6 +2257,196 @@ namespace ShopBanDoTheThao.Server.Controllers
         }
     }
 
+    // ========== QUẢN LÝ POPUP ==========
+    [HttpGet("popup")]
+    public async Task<IActionResult> GetDanhSachPopup(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            if (!await IsAdminAsync())
+            {
+                return Forbid();
+            }
+
+            var query = _context.Popup.AsQueryable();
+
+            var totalCount = await query.CountAsync();
+            var popups = await query
+                .OrderBy(p => p.ThuTuHienThi)
+                .ThenByDescending(p => p.NgayTao)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.TieuDe,
+                    p.NoiDung,
+                    p.HinhAnh,
+                    p.LienKet,
+                    p.NutBam,
+                    p.LoaiPopup,
+                    p.ThuTuHienThi,
+                    p.DangHoatDong,
+                    NgayBatDau = p.NgayBatDau,
+                    NgayKetThuc = p.NgayKetThuc,
+                    p.HienThiMotLan,
+                    NgayTao = p.NgayTao,
+                    NgayCapNhat = p.NgayCapNhat
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                Data = popups,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi khi tải danh sách popup: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("popup")]
+    public async Task<IActionResult> TaoPopup([FromBody] TaoPopupRequest request)
+    {
+        try
+        {
+            if (!await IsAdminAsync())
+            {
+                return Forbid();
+            }
+
+            var popup = new Models.Popup
+            {
+                TieuDe = request.TieuDe,
+                NoiDung = request.NoiDung,
+                HinhAnh = request.HinhAnh,
+                LienKet = request.LienKet,
+                NutBam = request.NutBam,
+                LoaiPopup = request.LoaiPopup ?? "ThongBao",
+                ThuTuHienThi = request.ThuTuHienThi,
+                DangHoatDong = request.DangHoatDong,
+                NgayBatDau = request.NgayBatDau,
+                NgayKetThuc = request.NgayKetThuc,
+                HienThiMotLan = request.HienThiMotLan,
+                NgayTao = DateTime.UtcNow
+            };
+
+            _context.Popup.Add(popup);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Tạo popup thành công", id = popup.Id });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi khi tạo popup: {ex.Message}" });
+        }
+    }
+
+    [HttpPut("popup/{id}")]
+    public async Task<IActionResult> CapNhatPopup(int id, [FromBody] CapNhatPopupRequest request)
+    {
+        try
+        {
+            if (!await IsAdminAsync())
+            {
+                return Forbid();
+            }
+
+            var popup = await _context.Popup.FindAsync(id);
+            if (popup == null)
+            {
+                return NotFound(new { message = "Popup không tồn tại" });
+            }
+
+            popup.TieuDe = request.TieuDe;
+            popup.NoiDung = request.NoiDung;
+            popup.HinhAnh = request.HinhAnh;
+            popup.LienKet = request.LienKet;
+            popup.NutBam = request.NutBam;
+            popup.LoaiPopup = request.LoaiPopup ?? "ThongBao";
+            popup.ThuTuHienThi = request.ThuTuHienThi;
+            popup.DangHoatDong = request.DangHoatDong;
+            popup.NgayBatDau = request.NgayBatDau;
+            popup.NgayKetThuc = request.NgayKetThuc;
+            popup.HienThiMotLan = request.HienThiMotLan;
+            popup.NgayCapNhat = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Cập nhật popup thành công" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi khi cập nhật popup: {ex.Message}" });
+        }
+    }
+
+    [HttpDelete("popup/{id}")]
+    public async Task<IActionResult> XoaPopup(int id)
+    {
+        try
+        {
+            if (!await IsAdminAsync())
+            {
+                return Forbid();
+            }
+
+            var popup = await _context.Popup.FindAsync(id);
+            if (popup == null)
+            {
+                return NotFound(new { message = "Popup không tồn tại" });
+            }
+
+            _context.Popup.Remove(popup);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Xóa popup thành công" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi khi xóa popup: {ex.Message}" });
+        }
+    }
+
+    public class TaoPopupRequest
+    {
+        [Required]
+        public string TieuDe { get; set; } = string.Empty;
+        public string? NoiDung { get; set; }
+        public string? HinhAnh { get; set; }
+        public string? LienKet { get; set; }
+        public string? NutBam { get; set; }
+        public string? LoaiPopup { get; set; } = "ThongBao";
+        public int ThuTuHienThi { get; set; } = 0;
+        public bool DangHoatDong { get; set; } = true;
+        public DateTime NgayBatDau { get; set; } = DateTime.UtcNow;
+        public DateTime? NgayKetThuc { get; set; }
+        public bool HienThiMotLan { get; set; } = false;
+    }
+
+    public class CapNhatPopupRequest
+    {
+        [Required]
+        public string TieuDe { get; set; } = string.Empty;
+        public string? NoiDung { get; set; }
+        public string? HinhAnh { get; set; }
+        public string? LienKet { get; set; }
+        public string? NutBam { get; set; }
+        public string? LoaiPopup { get; set; } = "ThongBao";
+        public int ThuTuHienThi { get; set; } = 0;
+        public bool DangHoatDong { get; set; } = true;
+        public DateTime NgayBatDau { get; set; } = DateTime.UtcNow;
+        public DateTime? NgayKetThuc { get; set; }
+        public bool HienThiMotLan { get; set; } = false;
+    }
+
     // ========== QUẢN LÝ TIN TỨC ==========
     [HttpGet("tintuc")]
     public async Task<IActionResult> GetDanhSachTinTuc(
@@ -2480,6 +2680,135 @@ namespace ShopBanDoTheThao.Server.Controllers
                 return StatusCode(500, new { message = $"Lỗi khi tạo thông báo: {ex.Message}" });
             }
         }
+
+        [HttpPost("thongbao/khuyen-mai")]
+        public async Task<IActionResult> TaoThongBaoKhuyenMai([FromBody] TaoThongBaoKhuyenMaiRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                if (string.IsNullOrEmpty(request.TieuDe) || string.IsNullOrEmpty(request.NoiDung))
+                {
+                    return BadRequest(new { message = "Tiêu đề và nội dung không được để trống" });
+                }
+
+                await Helpers.ThongBaoHelper.TaoThongBaoKhuyenMai(
+                    _context,
+                    request.TieuDe,
+                    request.NoiDung,
+                    request.LienKet
+                );
+
+                return Ok(new { message = "Tạo thông báo khuyến mãi thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tạo thông báo: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("thongbao/canh-bao")]
+        public async Task<IActionResult> TaoThongBaoCanhBao([FromBody] TaoThongBaoCanhBaoRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                if (string.IsNullOrEmpty(request.TieuDe) || string.IsNullOrEmpty(request.NoiDung))
+                {
+                    return BadRequest(new { message = "Tiêu đề và nội dung không được để trống" });
+                }
+
+                if (request.NguoiDungIds == null || request.NguoiDungIds.Count == 0)
+                {
+                    return BadRequest(new { message = "Vui lòng chọn ít nhất một khách hàng" });
+                }
+
+                await Helpers.ThongBaoHelper.TaoThongBaoCanhBao(
+                    _context,
+                    request.NguoiDungIds,
+                    request.TieuDe,
+                    request.NoiDung,
+                    request.LienKet
+                );
+
+                return Ok(new { message = "Tạo thông báo cảnh báo thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tạo thông báo: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("thongbao")]
+        public async Task<IActionResult> GetDanhSachThongBao(
+            [FromQuery] string? loai,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var query = _context.ThongBao
+                    .Include(t => t.NguoiDung)
+                    .AsQueryable();
+
+                // Filter theo loại
+                if (!string.IsNullOrEmpty(loai) && loai != "all")
+                {
+                    query = query.Where(t => t.Loai == loai);
+                }
+
+                var totalCount = await query.CountAsync();
+                var thongBao = await query
+                    .OrderByDescending(t => t.NgayTao)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.TieuDe,
+                        t.NoiDung,
+                        t.Loai,
+                        t.LienKet,
+                        t.DaDoc,
+                        t.NgayTao,
+                        t.DonHangId,
+                        t.SanPhamId,
+                        NguoiDung = new
+                        {
+                            t.NguoiDung.Id,
+                            HoTen = $"{t.NguoiDung.Ho} {t.NguoiDung.Ten}".Trim(),
+                            t.NguoiDung.Email
+                        }
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    Data = thongBao,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tải danh sách thông báo: {ex.Message}" });
+            }
+        }
     }
 
     public class TaoBannerRequest
@@ -2549,6 +2878,35 @@ namespace ShopBanDoTheThao.Server.Controllers
 
         [MaxLength(1000)]
         public string? NoiDung { get; set; }
+    }
+
+    public class TaoThongBaoKhuyenMaiRequest
+    {
+        [Required]
+        [MaxLength(200)]
+        public string TieuDe { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string? NoiDung { get; set; }
+
+        [MaxLength(100)]
+        public string? LienKet { get; set; }
+    }
+
+    public class TaoThongBaoCanhBaoRequest
+    {
+        [Required]
+        public List<int> NguoiDungIds { get; set; } = new List<int>();
+
+        [Required]
+        [MaxLength(200)]
+        public string TieuDe { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string? NoiDung { get; set; }
+
+        [MaxLength(100)]
+        public string? LienKet { get; set; }
     }
 
     public class CapNhatHienThiDanhGiaRequest

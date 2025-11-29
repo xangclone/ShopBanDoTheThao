@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { gioHangService } from '../services/gioHangService';
+import { yeuThichService } from '../services/yeuThichService';
 import { toast } from 'react-toastify';
 import { getImageUrl } from '../utils/imageUtils';
 import ImageWithFallback from './ImageWithFallback';
@@ -16,8 +17,7 @@ function SidebarPopup({ isOpen, onClose, type = 'gioHang' }) {
     if (isOpen && type === 'gioHang') {
       loadGioHang();
     } else if (isOpen && type === 'yeuThich') {
-      // TODO: Load yêu thích
-      setItems([]);
+      loadYeuThich();
     }
   }, [isOpen, type]);
 
@@ -41,6 +41,24 @@ function SidebarPopup({ isOpen, onClose, type = 'gioHang' }) {
     }
   };
 
+  const loadYeuThich = async () => {
+    setLoading(true);
+    try {
+      const data = await yeuThichService.getYeuThich();
+      // Normalize dữ liệu để đảm bảo có cấu trúc giống nhau
+      const normalizedData = (data || []).map(item => ({
+        id: item.id,
+        sanPham: item.sanPham || item.SanPham || {}
+      }));
+      setItems(normalizedData);
+    } catch (error) {
+      console.error('Lỗi khi tải yêu thích:', error);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCapNhatSoLuong = async (id, soLuong) => {
     if (soLuong < 1) return;
     try {
@@ -53,15 +71,21 @@ function SidebarPopup({ isOpen, onClose, type = 'gioHang' }) {
 
   const handleXoa = async (id) => {
     try {
-      await gioHangService.xoaKhoiGioHang(id);
-      toast.success('Đã xóa khỏi giỏ hàng');
-      // Xóa khỏi danh sách đã chọn
-      setSelectedItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-      loadGioHang();
+      if (type === 'gioHang') {
+        await gioHangService.xoaKhoiGioHang(id);
+        toast.success('Đã xóa khỏi giỏ hàng');
+        // Xóa khỏi danh sách đã chọn
+        setSelectedItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+        loadGioHang();
+      } else if (type === 'yeuThich') {
+        await yeuThichService.xoaKhoiYeuThich(id);
+        toast.success('Đã xóa khỏi yêu thích');
+        loadYeuThich();
+      }
     } catch (error) {
       toast.error('Không thể xóa');
     }
@@ -219,33 +243,40 @@ function SidebarPopup({ isOpen, onClose, type = 'gioHang' }) {
                       </div>
                     )}
                     <Link
-                      to={`/san-pham/${item.sanPham?.id}`}
+                      to={`/san-pham/${item.sanPham?.id || item.sanPham?.Id}`}
                       onClick={onClose}
                       className="flex-shrink-0"
                     >
                       <ImageWithFallback
-                        src={getImageUrl(item.sanPham?.hinhAnhChinh)}
-                        alt={item.sanPham?.ten}
+                        src={getImageUrl(item.sanPham?.hinhAnhChinh || item.sanPham?.HinhAnhChinh)}
+                        alt={item.sanPham?.ten || item.sanPham?.Ten}
                         className="w-24 h-24 object-cover rounded-xl shadow-md"
                       />
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link
-                        to={`/san-pham/${item.sanPham?.id}`}
+                        to={`/san-pham/${item.sanPham?.id || item.sanPham?.Id}`}
                         onClick={onClose}
                         className="font-bold text-gray-800 hover:text-pink-600 transition-colors line-clamp-2 mb-2"
                       >
-                        {item.sanPham?.ten}
+                        {item.sanPham?.ten || item.sanPham?.Ten}
                       </Link>
-                      {item.kichThuoc && (
+                      {type === 'gioHang' && item.kichThuoc && (
                         <p className="text-sm text-gray-600 mb-1">Size: <span className="font-semibold">{item.kichThuoc}</span></p>
                       )}
-                      {item.mauSac && (
+                      {type === 'gioHang' && item.mauSac && (
                         <p className="text-sm text-gray-600 mb-2">Màu: <span className="font-semibold">{item.mauSac}</span></p>
                       )}
-                      <p className="text-lg font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-3">
-                        {formatPrice(item.sanPham?.gia || 0)}
-                      </p>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-lg font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                          {formatPrice(item.sanPham?.gia || item.sanPham?.Gia || 0)}
+                        </p>
+                        {item.sanPham?.giaGoc && item.sanPham.giaGoc > (item.sanPham?.gia || 0) && (
+                          <span className="text-sm text-gray-400 line-through ml-2">
+                            {formatPrice(item.sanPham.giaGoc)}
+                          </span>
+                        )}
+                      </div>
                       {type === 'gioHang' && (
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-xl border-2 border-pink-100 p-1">
@@ -269,6 +300,25 @@ function SidebarPopup({ isOpen, onClose, type = 'gioHang' }) {
                           >
                             <HiOutlineTrash className="w-5 h-5 text-red-600" />
                           </button>
+                        </div>
+                      )}
+                      {type === 'yeuThich' && (
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleXoa(item.id)}
+                            className="p-2 bg-red-50 hover:bg-red-100 rounded-xl transition-all duration-300 hover:scale-110"
+                            title="Xóa khỏi yêu thích"
+                          >
+                            <HiOutlineTrash className="w-5 h-5 text-red-600" />
+                          </button>
+                          <Link
+                            to={`/san-pham/${item.sanPham?.id || item.sanPham?.Id}`}
+                            onClick={onClose}
+                            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-2 px-4 rounded-xl hover:from-pink-600 hover:to-purple-600 font-semibold transition-all duration-300 hover:scale-105"
+                          >
+                            <span>Xem chi tiết</span>
+                            <HiOutlineArrowRight className="w-4 h-4" />
+                          </Link>
                         </div>
                       )}
                     </div>

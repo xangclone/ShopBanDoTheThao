@@ -17,6 +17,7 @@ function ChiTietDonHang() {
   const [daDanhGia, setDaDanhGia] = useState({}); // { sanPhamId: true/false }
   const [hoanTraModal, setHoanTraModal] = useState({ isOpen: false, lyDo: '' });
   const [trackingModal, setTrackingModal] = useState({ isOpen: false, maVanDon: '', viTriHienTai: '', phuongThucGiaoHang: '' });
+  const [huyDonModal, setHuyDonModal] = useState({ isOpen: false, lyDoHuy: '', lyDoHuyTuChon: '' });
 
   useEffect(() => {
     loadDonHang();
@@ -63,14 +64,21 @@ function ChiTietDonHang() {
     }
   };
 
-  const handleHuyDon = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+  const handleHuyDon = () => {
+    setHuyDonModal({ isOpen: true, lyDoHuy: '', lyDoHuyTuChon: '' });
+  };
+
+  const handleXacNhanHuy = async () => {
+    if (!huyDonModal.lyDoHuy && !huyDonModal.lyDoHuyTuChon.trim()) {
+      toast.error('Vui lòng chọn hoặc nhập lý do hủy đơn hàng');
       return;
     }
 
     try {
-      await donHangService.huyDonHang(id);
+      const lyDo = huyDonModal.lyDoHuy === 'Khac' ? huyDonModal.lyDoHuyTuChon.trim() : huyDonModal.lyDoHuy;
+      await donHangService.huyDonHang(id, lyDo);
       toast.success('Đã hủy đơn hàng');
+      setHuyDonModal({ isOpen: false, lyDoHuy: '', lyDoHuyTuChon: '' });
       loadDonHang();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể hủy đơn hàng');
@@ -432,6 +440,82 @@ function ChiTietDonHang() {
                 >
                   Cập nhật
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hủy đơn hàng */}
+      {huyDonModal.isOpen && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="backdrop-blur-xl bg-white/40 rounded-3xl shadow-2xl border border-white/50 w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-red-600">Hủy đơn hàng</h2>
+                <button
+                  onClick={() => setHuyDonModal({ isOpen: false, lyDoHuy: '', lyDoHuyTuChon: '' })}
+                  className="text-gray-500 hover:text-gray-700 text-2xl transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-700 mb-2">
+                    <span className="font-semibold">Mã đơn hàng:</span> {donHang?.maDonHang}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Lý do hủy đơn hàng <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={huyDonModal.lyDoHuy}
+                    onChange={(e) => setHuyDonModal({ ...huyDonModal, lyDoHuy: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl bg-white/60 backdrop-blur-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  >
+                    <option value="">-- Chọn lý do --</option>
+                    <option value="KhongMuonMuaNua">Không muốn mua nữa</option>
+                    <option value="DatNhamSanPham">Đặt nhầm sản phẩm</option>
+                    <option value="ThayDoiYDinh">Thay đổi ý định</option>
+                    <option value="TimThaySanPhamReHon">Tìm thấy sản phẩm rẻ hơn</option>
+                    <option value="KhongLienLacDuoc">Không liên lạc được với cửa hàng</option>
+                    <option value="Khac">Lý do khác</option>
+                  </select>
+                </div>
+
+                {huyDonModal.lyDoHuy === 'Khac' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nhập lý do <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={huyDonModal.lyDoHuyTuChon}
+                      onChange={(e) => setHuyDonModal({ ...huyDonModal, lyDoHuyTuChon: e.target.value })}
+                      placeholder="Nhập lý do hủy đơn hàng..."
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl bg-white/60 backdrop-blur-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setHuyDonModal({ isOpen: false, lyDoHuy: '', lyDoHuyTuChon: '' })}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-semibold transition-all duration-300"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleXacNhanHuy}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 font-semibold shadow-xl border border-white/30 transition-all duration-300"
+                  >
+                    Xác nhận hủy
+                  </button>
+                </div>
               </div>
             </div>
           </div>

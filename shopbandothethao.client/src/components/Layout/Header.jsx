@@ -30,6 +30,13 @@ function Header() {
     if (currentUser) {
       loadGioHangCount();
     }
+
+    // Kiểm tra nếu cần mở popup đăng nhập sau khi reset mật khẩu
+    const openLoginModal = localStorage.getItem('openLoginModal');
+    if (openLoginModal === 'true') {
+      localStorage.removeItem('openLoginModal');
+      setAuthModalOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -117,10 +124,10 @@ function Header() {
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3 flex-shrink-0 group">
               <div className="w-12 h-12 bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-400 rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                <span className="text-white font-bold text-xl">S</span>
+                <span className="text-white font-bold text-xl">T</span>
               </div>
               <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent hidden sm:inline">
-                Shop Bán Đồ Thể Thao
+                Tài Khùm
               </span>
             </Link>
 

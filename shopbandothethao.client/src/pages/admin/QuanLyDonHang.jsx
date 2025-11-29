@@ -15,6 +15,10 @@ function QuanLyDonHang() {
   const [showChiTietModal, setShowChiTietModal] = useState(false);
   const [chiTietDonHang, setChiTietDonHang] = useState(null);
   const [loadingChiTiet, setLoadingChiTiet] = useState(false);
+  const [showHuyModal, setShowHuyModal] = useState(false);
+  const [donHangHuy, setDonHangHuy] = useState(null);
+  const [lyDoHuy, setLyDoHuy] = useState('');
+  const [lyDoHuyTuChon, setLyDoHuyTuChon] = useState('');
 
   useEffect(() => {
     loadDonHang();
@@ -43,17 +47,39 @@ function QuanLyDonHang() {
     }
   };
 
-  const handleCapNhatTrangThai = async (id, trangThaiMoi) => {
+  const handleCapNhatTrangThai = async (id, trangThaiMoi, lyDoHuy = null) => {
     try {
-      await adminService.capNhatTrangThaiDonHang(id, trangThaiMoi);
+      await adminService.capNhatTrangThaiDonHang(id, trangThaiMoi, lyDoHuy);
       toast.success('Cập nhật trạng thái thành công');
       loadDonHang();
       if (showChiTietModal) {
         loadChiTietDonHang(id);
       }
+      if (trangThaiMoi === 'DaHuy') {
+        setShowHuyModal(false);
+        setDonHangHuy(null);
+        setLyDoHuy('');
+        setLyDoHuyTuChon('');
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể cập nhật');
     }
+  };
+
+  const handleMoHuyModal = (don) => {
+    setDonHangHuy(don);
+    setShowHuyModal(true);
+    setLyDoHuy('');
+    setLyDoHuyTuChon('');
+  };
+
+  const handleXacNhanHuy = () => {
+    if (!lyDoHuy && !lyDoHuyTuChon.trim()) {
+      toast.error('Vui lòng chọn hoặc nhập lý do hủy đơn hàng');
+      return;
+    }
+    const lyDo = lyDoHuy === 'Khac' ? lyDoHuyTuChon.trim() : lyDoHuy;
+    handleCapNhatTrangThai(donHangHuy.id, 'DaHuy', lyDo);
   };
 
   const handleTimKiemMaDonHang = async () => {
@@ -187,6 +213,7 @@ function QuanLyDonHang() {
               <th className="px-4 py-3 text-left">Ngày đặt</th>
               <th className="px-4 py-3 text-left">Trạng thái</th>
               <th className="px-4 py-3 text-right">Tổng tiền</th>
+              <th className="px-4 py-3 text-left">Ghi chú</th>
               <th className="px-4 py-3 text-center">Thao tác</th>
             </tr>
           </thead>
@@ -214,6 +241,17 @@ function QuanLyDonHang() {
                 </td>
                 <td className="px-4 py-3 text-right font-semibold">{formatPrice(don.tongTien)}</td>
                 <td className="px-4 py-3">
+                  {don.ghiChu ? (
+                    <div className="max-w-xs">
+                      <p className="text-sm text-gray-700 line-clamp-2" title={don.ghiChu}>
+                        {don.ghiChu}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400 italic">Không có</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
                   <div className="flex gap-2 justify-center">
                     {don.trangThai === 'ChoXacNhan' && (
                       <button
@@ -237,6 +275,16 @@ function QuanLyDonHang() {
                         className="px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 text-sm font-semibold shadow-lg border border-white/30 transition-all duration-300"
                       >
                         Hoàn thành
+                      </button>
+                    )}
+                    {(don.trangThai === 'ChoXacNhan' || 
+                      don.trangThai === 'DaXacNhan' || 
+                      don.trangThai === 'DangGiao') && (
+                      <button
+                        onClick={() => handleMoHuyModal(don)}
+                        className="px-3 py-1 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 text-sm font-semibold shadow-lg border border-white/30 transition-all duration-300"
+                      >
+                        Hủy
                       </button>
                     )}
                   </div>
@@ -412,6 +460,16 @@ function QuanLyDonHang() {
                     </div>
                   )}
 
+                  {/* Lý do hủy (nếu đơn hàng đã bị hủy) */}
+                  {chiTietDonHang.trangThai === 'DaHuy' && chiTietDonHang.lyDoHoanTra && (
+                    <div className="border-t border-white/30 pt-4">
+                      <h3 className="font-semibold mb-2 text-red-600">Lý do hủy đơn hàng</h3>
+                      <div className="bg-red-50/60 backdrop-blur-md rounded-xl p-4 border border-red-200/50">
+                        <p className="text-gray-700 whitespace-pre-wrap">{chiTietDonHang.lyDoHoanTra}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Cập nhật trạng thái */}
                   <div className="border-t border-white/30 pt-4">
                     <h3 className="font-semibold mb-4">Cập nhật trạng thái</h3>
@@ -440,9 +498,11 @@ function QuanLyDonHang() {
                           Hoàn thành giao hàng
                         </button>
                       )}
-                      {chiTietDonHang.trangThai === 'ChoXacNhan' && (
+                      {(chiTietDonHang.trangThai === 'ChoXacNhan' || 
+                        chiTietDonHang.trangThai === 'DaXacNhan' || 
+                        chiTietDonHang.trangThai === 'DangGiao') && (
                         <button
-                          onClick={() => handleCapNhatTrangThai(chiTietDonHang.id, 'DaHuy')}
+                          onClick={() => handleMoHuyModal(chiTietDonHang)}
                           className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 font-semibold shadow-xl border border-white/30 transition-all duration-300"
                         >
                           Hủy đơn hàng
@@ -454,6 +514,92 @@ function QuanLyDonHang() {
               ) : (
                 <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hủy đơn hàng */}
+      {showHuyModal && donHangHuy && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+          <div className="backdrop-blur-xl bg-white/40 rounded-3xl shadow-2xl border border-white/50 w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-red-600">Hủy đơn hàng</h2>
+                <button
+                  onClick={() => {
+                    setShowHuyModal(false);
+                    setDonHangHuy(null);
+                    setLyDoHuy('');
+                    setLyDoHuyTuChon('');
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-700 mb-2">
+                    <span className="font-semibold">Mã đơn hàng:</span> {donHangHuy.maDonHang}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Lý do hủy đơn hàng <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={lyDoHuy}
+                    onChange={(e) => setLyDoHuy(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl bg-white/60 backdrop-blur-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  >
+                    <option value="">-- Chọn lý do --</option>
+                    <option value="KhachHangYeuCau">Khách hàng yêu cầu hủy</option>
+                    <option value="HetHang">Hết hàng</option>
+                    <option value="KhongLienLacDuoc">Không liên lạc được với khách hàng</option>
+                    <option value="DiaChiKhongHopLe">Địa chỉ giao hàng không hợp lệ</option>
+                    <option value="LoiHeThong">Lỗi hệ thống</option>
+                    <option value="Khac">Lý do khác</option>
+                  </select>
+                </div>
+
+                {lyDoHuy === 'Khac' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nhập lý do <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={lyDoHuyTuChon}
+                      onChange={(e) => setLyDoHuyTuChon(e.target.value)}
+                      placeholder="Nhập lý do hủy đơn hàng..."
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl bg-white/60 backdrop-blur-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowHuyModal(false);
+                      setDonHangHuy(null);
+                      setLyDoHuy('');
+                      setLyDoHuyTuChon('');
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-semibold transition-all duration-300"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleXacNhanHuy}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 font-semibold shadow-xl border border-white/30 transition-all duration-300"
+                  >
+                    Xác nhận hủy
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -27,8 +27,8 @@ export const adminService = {
     return response.data;
   },
 
-  capNhatTrangThaiDonHang: async (id, trangThai) => {
-    const response = await api.put(`/admin/donhang/${id}/trangthai`, { trangThai });
+  capNhatTrangThaiDonHang: async (id, trangThai, lyDoHuy = null) => {
+    const response = await api.put(`/admin/donhang/${id}/trangthai`, { trangThai, lyDoHuy });
     return response.data;
   },
 
@@ -273,6 +273,44 @@ export const adminService = {
   // Quản lý Thông báo
   taoThongBaoDealHot: async (data) => {
     const response = await api.post('/admin/thongbao/deal-hot', data);
+    return response.data;
+  },
+
+  taoThongBaoKhuyenMai: async (data) => {
+    const response = await api.post('/admin/thongbao/khuyen-mai', data);
+    return response.data;
+  },
+
+  taoThongBaoCanhBao: async (data) => {
+    const response = await api.post('/admin/thongbao/canh-bao', data);
+    return response.data;
+  },
+
+  getDanhSachThongBao: async (loai = 'all', page = 1, pageSize = 50) => {
+    const params = { page, pageSize };
+    if (loai && loai !== 'all') params.loai = loai;
+    const response = await api.get('/admin/thongbao', { params });
+    return response.data;
+  },
+
+  // ========== QUẢN LÝ POPUP ==========
+  getDanhSachPopup: async (page = 1, pageSize = 20) => {
+    const response = await api.get('/admin/popup', { params: { page, pageSize } });
+    return response.data;
+  },
+
+  taoPopup: async (data) => {
+    const response = await api.post('/admin/popup', data);
+    return response.data;
+  },
+
+  capNhatPopup: async (id, data) => {
+    const response = await api.put(`/admin/popup/${id}`, data);
+    return response.data;
+  },
+
+  xoaPopup: async (id) => {
+    const response = await api.delete(`/admin/popup/${id}`);
     return response.data;
   },
 };

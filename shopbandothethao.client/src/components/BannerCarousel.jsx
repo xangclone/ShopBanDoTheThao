@@ -47,7 +47,7 @@ function BannerCarousel() {
 
   if (loading) {
     return (
-      <div className="w-full h-72 md:h-96 bg-gray-200 animate-pulse rounded-lg"></div>
+      <div className="w-full h-96 md:h-[600px] bg-gray-200 animate-pulse rounded-lg"></div>
     );
   }
 
@@ -56,7 +56,7 @@ function BannerCarousel() {
   }
 
   return (
-    <div className="relative w-full h-72 md:h-96 overflow-hidden rounded-2xl shadow-2xl mb-12 group">
+    <div className="relative w-full h-96 md:h-[600px] overflow-hidden rounded-2xl shadow-2xl mb-12 group">
       {/* Banner Images */}
       <div
         className="flex transition-transform duration-1000 ease-in-out h-full"

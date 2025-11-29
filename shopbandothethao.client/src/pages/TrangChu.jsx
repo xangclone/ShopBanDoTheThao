@@ -7,6 +7,7 @@ import ProductCard from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
 import BannerCarousel from '../components/BannerCarousel';
 import CategoryCarousel from '../components/CategoryCarousel';
+import FlashSaleBanner from '../components/FlashSaleBanner';
 import { getImageUrl } from '../utils/imageUtils';
 import { formatVietnamDate } from '../utils/dateUtils';
 import { HiOutlineArrowUp } from 'react-icons/hi';
@@ -123,6 +124,9 @@ function TrangChu() {
         title="Loại sản phẩm"
         subtitle="Khám phá các danh mục đa dạng"
       />
+
+      {/* Flash Sale Banner */}
+      <FlashSaleBanner />
 
       {/* Sản phẩm bán chạy */}
       <ProductCarousel

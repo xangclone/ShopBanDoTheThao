@@ -5,6 +5,7 @@ import { donHangService } from '../services/donHangService';
 import { diaChiService } from '../services/diaChiService';
 import { authService } from '../services/authService';
 import { maGiamGiaService } from '../services/maGiamGiaService';
+import { sePayService } from '../services/sePayService';
 import { toast } from 'react-toastify';
 import { 
   HiOutlineCreditCard, 
@@ -31,6 +32,7 @@ function ThanhToan() {
   });
   const [maGiamGiaInfo, setMaGiamGiaInfo] = useState(null); // Thông tin mã giảm giá đã áp dụng
   const [giamGia, setGiamGia] = useState(0); // Số tiền giảm giá
+  const [donHangMoiTao, setDonHangMoiTao] = useState(null);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) {
@@ -179,7 +181,7 @@ function ThanhToan() {
         diaChiGiaoHangId: diaChiId,
         phuongThucThanhToanId: formData.phuongThucThanhToanId && 
                                formData.phuongThucThanhToanId !== 'COD' && 
-                               formData.phuongThucThanhToanId !== 'BANK' 
+                               formData.phuongThucThanhToanId !== 'SEPAY' 
           ? parseInt(formData.phuongThucThanhToanId) 
           : null,
         maGiamGia: formData.maGiamGia && formData.maGiamGia.trim() !== '' ? formData.maGiamGia.trim() : null,
@@ -192,9 +194,47 @@ function ThanhToan() {
       
       console.log('Gửi dữ liệu đơn hàng:', dataToSend);
       
-      const donHang = await donHangService.taoDonHang(dataToSend);
-      toast.success('Đặt hàng thành công!');
-      navigate(`/don-hang/${donHang.id}`);
+      const donHangResponse = await donHangService.taoDonHang(dataToSend);
+      console.log('Response từ API:', donHangResponse);
+      
+      // Lấy ID đơn hàng từ response
+      // Axios tự động unwrap response.data, nên donHangResponse đã là data từ server
+      const donHangId = donHangResponse?.id;
+      
+      if (!donHangId) {
+        console.error('Không tìm thấy ID đơn hàng trong response:', donHangResponse);
+        toast.error('Đặt hàng thành công nhưng không thể lấy thông tin đơn hàng. Vui lòng kiểm tra trong mục Đơn hàng của tôi.');
+        // Chuyển đến trang danh sách đơn hàng
+        setTimeout(() => {
+          navigate('/don-hang');
+        }, 2000);
+        return;
+      }
+      
+      console.log('Đơn hàng đã tạo với ID:', donHangId);
+      
+      // Nếu chọn SePay, tạo thanh toán
+      if (formData.phuongThucThanhToanId === 'SEPAY') {
+        // Tạo thanh toán SePay
+        try {
+          const sePayResponse = await sePayService.createPayment(donHangId);
+          if (sePayResponse.success && sePayResponse.paymentUrl) {
+            // Chuyển đến trang thanh toán SePay
+            window.location.href = sePayResponse.paymentUrl;
+          } else {
+            toast.error('Không thể tạo thanh toán SePay');
+            navigate(`/don-hang/${donHangId}`);
+          }
+        } catch (error) {
+          console.error('Lỗi khi tạo thanh toán SePay:', error);
+          toast.error('Không thể tạo thanh toán SePay');
+          navigate(`/don-hang/${donHangId}`);
+        }
+      } else {
+        toast.success('Đặt hàng thành công!');
+        // Chuyển đến trang chi tiết đơn hàng
+        navigate(`/don-hang/${donHangId}`);
+      }
     } catch (error) {
       console.error('Lỗi khi tạo đơn hàng:', error);
       console.error('Response data:', error.response?.data);
@@ -334,20 +374,43 @@ function ThanhToan() {
                 />
                 <span className="font-semibold text-gray-800">💰 Thanh toán khi nhận hàng (COD)</span>
               </label>
-              <label className={`flex items-center space-x-4 p-5 rounded-2xl cursor-pointer transition-all duration-300 border-2 ${
-                formData.phuongThucThanhToanId === 'BANK'
+              <label className={`flex items-center space-x-4 p-5 rounded-2xl cursor-not-allowed transition-all duration-300 border-2 opacity-60 ${
+                false
                   ? 'bg-gradient-to-r from-pink-100 to-purple-100 border-pink-400 shadow-lg'
-                  : 'bg-white/60 backdrop-blur-sm border-pink-100 hover:border-pink-300 hover:bg-pink-50'
+                  : 'bg-white/60 backdrop-blur-sm border-gray-200'
               }`}>
                 <input
                   type="radio"
                   name="phuongThuc"
                   value="BANK"
-                  checked={formData.phuongThucThanhToanId === 'BANK'}
-                  onChange={() => setFormData({ ...formData, phuongThucThanhToanId: 'BANK' })}
-                  className="w-5 h-5 text-pink-600 focus:ring-pink-500"
+                  disabled
+                  className="w-5 h-5 text-pink-600 focus:ring-pink-500 cursor-not-allowed"
                 />
-                <span className="font-semibold text-gray-800">🏦 Chuyển khoản ngân hàng</span>
+                <div className="flex-1">
+                  <span className="font-semibold text-gray-800">🏦 Chuyển khoản ngân hàng</span>
+                  <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-semibold">
+                    Đang phát triển
+                  </span>
+                </div>
+              </label>
+              <label className={`flex items-center space-x-4 p-5 rounded-2xl cursor-not-allowed transition-all duration-300 border-2 opacity-60 ${
+                false
+                  ? 'bg-gradient-to-r from-pink-100 to-purple-100 border-pink-400 shadow-lg'
+                  : 'bg-white/60 backdrop-blur-sm border-gray-200'
+              }`}>
+                <input
+                  type="radio"
+                  name="phuongThuc"
+                  value="SEPAY"
+                  disabled
+                  className="w-5 h-5 text-pink-600 focus:ring-pink-500 cursor-not-allowed"
+                />
+                <div className="flex-1">
+                  <span className="font-semibold text-gray-800">💳 SePay (Chuyển khoản tự động)</span>
+                  <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-semibold">
+                    Đang phát triển
+                  </span>
+                </div>
               </label>
             </div>
           </div>
@@ -467,6 +530,7 @@ function ThanhToan() {
           </div>
         </div>
       </form>
+
       </div>
     </div>
   );

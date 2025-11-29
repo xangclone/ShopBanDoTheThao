@@ -15,7 +15,8 @@ import {
   HiOutlineLocationMarker,
   HiOutlineClock,
   HiOutlineHome,
-  HiOutlineNewspaper
+  HiOutlineNewspaper,
+  HiOutlineChat
 } from 'react-icons/hi';
 import { FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa';
 
@@ -98,34 +99,46 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#huong-dan" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
+                <Link to="/ho-tro" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
+                  <HiOutlineBookOpen className="w-5 h-5" />
+                  Hỗ trợ khách hàng
+                </Link>
+              </li>
+              <li>
+                <Link to="/ho-tro/huong-dan-mua-hang" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
                   <HiOutlineBookOpen className="w-5 h-5" />
                   Hướng dẫn mua hàng
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#chinh-sach-doi-tra" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
+                <Link to="/ho-tro/chinh-sach-doi-tra" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
                   <HiOutlineRefresh className="w-5 h-5" />
                   Chính sách đổi trả
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#van-chuyen" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
+                <Link to="/ho-tro/chinh-sach-van-chuyen" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
                   <HiOutlineTruck className="w-5 h-5" />
                   Chính sách vận chuyển
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#thanh-toan" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
+                <Link to="/ho-tro/huong-dan-thanh-toan" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
                   <HiOutlineCreditCard className="w-5 h-5" />
                   Hướng dẫn thanh toán
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#faq" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
+                <Link to="/ho-tro/faq" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
                   <HiOutlineQuestionMarkCircle className="w-5 h-5" />
                   Câu hỏi thường gặp
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/ho-tro/lien-he" className="flex items-center gap-2 hover:text-white transition-all duration-300 hover:translate-x-2 font-medium">
+                  <HiOutlineChat className="w-5 h-5" />
+                  Liên hệ
+                </Link>
               </li>
             </ul>
           </div>

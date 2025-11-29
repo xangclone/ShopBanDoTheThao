@@ -16,8 +16,8 @@ export const donHangService = {
     return response.data;
   },
 
-  huyDonHang: async (id) => {
-    const response = await api.put(`/donhang/${id}/huy`);
+  huyDonHang: async (id, lyDoHuy = null) => {
+    const response = await api.put(`/donhang/${id}/huy`, { lyDoHuy });
     return response.data;
   },
 

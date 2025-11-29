@@ -366,6 +366,88 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.ToTable("DonHangChiTiet");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.FlashSale", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HinhAnh")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("NgayCapNhat")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("ThoiGianBatDau")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ThoiGianKetThuc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UuTien")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FlashSale");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.FlashSaleSanPham", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("FlashSaleId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("GiaFlashSale")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SanPhamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuongDaBan")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuongToiDa")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UuTien")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FlashSaleId");
+
+                    b.HasIndex("SanPhamId");
+
+                    b.ToTable("FlashSaleSanPham");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.GioHangItem", b =>
                 {
                     b.Property<int>("Id")
@@ -585,6 +667,98 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.ToTable("PhuongThucThanhToan");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.Popup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HienThiMotLan")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HinhAnh")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LienKet")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LoaiPopup")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("NgayBatDau")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayCapNhat")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayKetThuc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NoiDung")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("NutBam")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("ThuTuHienThi")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TieuDe")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Popup");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.ResetPasswordToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DaSuDung")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("NgayHetHan")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("NguoiDungId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NguoiDungId");
+
+                    b.ToTable("ResetPasswordToken");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.SanPham", b =>
                 {
                     b.Property<int>("Id")
@@ -740,6 +914,54 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.HasIndex("SanPhamId");
 
                     b.ToTable("SanPhamBienThe");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.TaiKhoanNganHang", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ChiNhanh")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("GhiChu")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("NgayCapNhat")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SoTaiKhoan")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TenChuTaiKhoan")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TenNganHang")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("UuTien")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TaiKhoanNganHang");
                 });
 
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.ThongBao", b =>
@@ -941,6 +1163,71 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.ToTable("TinTuc");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.XacNhanChuyenKhoan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DonHangId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GhiChu")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("HinhAnhChungTu")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayXacNhan")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("NguoiDungId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NoiDungChuyenKhoan")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SoTaiKhoanGui")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("SoTien")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TaiKhoanNganHangId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenNguoiGui")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DonHangId");
+
+                    b.HasIndex("NguoiDungId");
+
+                    b.HasIndex("TaiKhoanNganHangId");
+
+                    b.ToTable("XacNhanChuyenKhoan");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.YeuThichItem", b =>
                 {
                     b.Property<int>("Id")
@@ -972,13 +1259,13 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
                         .WithMany("DanhSachDanhGia")
                         .HasForeignKey("NguoiDungId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ShopBanDoTheThao.Server.Models.SanPham", "SanPham")
                         .WithMany("DanhSachDanhGia")
                         .HasForeignKey("SanPhamId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("NguoiDung");
@@ -1051,6 +1338,25 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.Navigation("SanPham");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.FlashSaleSanPham", b =>
+                {
+                    b.HasOne("ShopBanDoTheThao.Server.Models.FlashSale", "FlashSale")
+                        .WithMany("DanhSachSanPham")
+                        .HasForeignKey("FlashSaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.SanPham", "SanPham")
+                        .WithMany()
+                        .HasForeignKey("SanPhamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FlashSale");
+
+                    b.Navigation("SanPham");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.GioHangItem", b =>
                 {
                     b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
@@ -1074,6 +1380,17 @@ namespace ShopBanDoTheThao.Server.Migrations
                 {
                     b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
                         .WithMany("DanhSachPhuongThucThanhToan")
+                        .HasForeignKey("NguoiDungId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NguoiDung");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.ResetPasswordToken", b =>
+                {
+                    b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
+                        .WithMany()
                         .HasForeignKey("NguoiDungId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1160,6 +1477,33 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.Navigation("SanPham");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.XacNhanChuyenKhoan", b =>
+                {
+                    b.HasOne("ShopBanDoTheThao.Server.Models.DonHang", "DonHang")
+                        .WithMany()
+                        .HasForeignKey("DonHangId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
+                        .WithMany()
+                        .HasForeignKey("NguoiDungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.TaiKhoanNganHang", "TaiKhoanNganHang")
+                        .WithMany()
+                        .HasForeignKey("TaiKhoanNganHangId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DonHang");
+
+                    b.Navigation("NguoiDung");
+
+                    b.Navigation("TaiKhoanNganHang");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.YeuThichItem", b =>
                 {
                     b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
@@ -1189,6 +1533,11 @@ namespace ShopBanDoTheThao.Server.Migrations
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.DonHang", b =>
                 {
                     b.Navigation("DanhSachChiTiet");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.FlashSale", b =>
+                {
+                    b.Navigation("DanhSachSanPham");
                 });
 
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.NguoiDung", b =>

@@ -10,6 +10,8 @@ function NotificationBell() {
   const [soLuongChuaDoc, setSoLuongChuaDoc] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showChiTietModal, setShowChiTietModal] = useState(false);
+  const [chiTietThongBao, setChiTietThongBao] = useState(null);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -92,9 +94,16 @@ function NotificationBell() {
 
   const handleClickThongBao = (thongBao) => {
     handleDanhDauDaDoc(thongBao.id);
-    if (thongBao.lienKet) {
-      navigate(thongBao.lienKet);
-      setIsOpen(false);
+    setChiTietThongBao(thongBao);
+    setShowChiTietModal(true);
+    setIsOpen(false);
+  };
+
+  const handleChuyenDenTrang = () => {
+    if (chiTietThongBao?.lienKet) {
+      navigate(chiTietThongBao.lienKet);
+      setShowChiTietModal(false);
+      setChiTietThongBao(null);
     }
   };
 
@@ -199,6 +208,99 @@ function NotificationBell() {
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Chi tiết thông báo */}
+      {showChiTietModal && chiTietThongBao && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[100] p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border-2 border-pink-100/50 w-full max-w-lg max-h-[90vh] overflow-y-auto my-auto">
+            <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b-2 border-pink-100/50 px-6 py-4 flex justify-between items-center rounded-t-3xl">
+              <h2 className="flex items-center gap-2 text-2xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                <HiOutlineBell className="w-6 h-6 text-pink-600" />
+                <span>Chi tiết thông báo</span>
+              </h2>
+              <button
+                onClick={() => {
+                  setShowChiTietModal(false);
+                  setChiTietThongBao(null);
+                }}
+                className="text-gray-500 hover:text-pink-600 transition-all duration-300 hover:scale-110 hover:bg-pink-50 rounded-full p-2"
+              >
+                <HiOutlineX className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Icon và loại */}
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-pink-50/80 via-purple-50/80 to-indigo-50/80 backdrop-blur-sm rounded-2xl border-2 border-pink-200/50">
+                <div className={`flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-r ${getLoaiColor(chiTietThongBao.loai)} flex items-center justify-center text-white text-2xl shadow-lg`}>
+                  {getLoaiIcon(chiTietThongBao.loai)}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-700 font-bold">
+                    {chiTietThongBao.loai === 'DonHang' ? '📦 Đơn hàng' : 
+                     chiTietThongBao.loai === 'DealHot' ? '🔥 Deal Hot' : 
+                     chiTietThongBao.loai === 'KhuyenMai' ? '🎁 Khuyến mãi' : 
+                     chiTietThongBao.loai === 'CanhBao' ? '⚠️ Cảnh báo' :
+                     chiTietThongBao.loai === 'AdminDonHang' ? '📋 Thông báo Admin' : '🔔 Hệ thống'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatVietnamDateTimeFull(new Date(chiTietThongBao.ngayTao))}
+                  </p>
+                </div>
+              </div>
+
+              {/* Tiêu đề */}
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {chiTietThongBao.tieuDe}
+                </h3>
+              </div>
+
+              {/* Nội dung */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border-2 border-pink-100/50 shadow-md">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm">
+                  {chiTietThongBao.noiDung || 'Không có nội dung chi tiết.'}
+                </p>
+              </div>
+
+              {/* Nút hành động */}
+              {chiTietThongBao.lienKet && (
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowChiTietModal(false);
+                      setChiTietThongBao(null);
+                    }}
+                    className="flex-1 px-4 py-3 bg-white/80 backdrop-blur-sm border-2 border-pink-200 text-gray-700 rounded-2xl hover:bg-pink-50 font-bold transition-all duration-300 shadow-md hover:shadow-lg"
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    onClick={handleChuyenDenTrang}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-2xl hover:from-pink-600 hover:to-purple-600 font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                  >
+                    Xem chi tiết
+                  </button>
+                </div>
+              )}
+
+              {!chiTietThongBao.lienKet && (
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={() => {
+                      setShowChiTietModal(false);
+                      setChiTietThongBao(null);
+                    }}
+                    className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-2xl hover:from-pink-600 hover:to-purple-600 font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

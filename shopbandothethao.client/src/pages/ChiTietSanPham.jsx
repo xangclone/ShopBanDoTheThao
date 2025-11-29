@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { sanPhamService } from '../services/sanPhamService';
 import { gioHangService } from '../services/gioHangService';
+import { flashSaleService } from '../services/flashSaleService';
 import { authService } from '../services/authService';
 import ProductCard from '../components/ProductCard';
 import { toast } from 'react-toastify';
@@ -19,7 +20,8 @@ import {
   HiOutlinePhone,
   HiOutlineMail,
   HiOutlineX,
-  HiOutlineShoppingBag
+  HiOutlineShoppingBag,
+  HiOutlineFire
 } from 'react-icons/hi';
 
 function ChiTietSanPham() {
@@ -35,11 +37,22 @@ function ChiTietSanPham() {
   const [hinhAnhHienTai, setHinhAnhHienTai] = useState(null);
   const [danhSachHinhAnh, setDanhSachHinhAnh] = useState([]);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [flashSale, setFlashSale] = useState(null);
 
   useEffect(() => {
     loadSanPham();
     loadSanPhamTuongTu();
+    loadFlashSale();
   }, [id]);
+
+  const loadFlashSale = async () => {
+    try {
+      const data = await flashSaleService.getFlashSaleBySanPhamId(parseInt(id));
+      setFlashSale(data);
+    } catch (error) {
+      console.error('Lỗi khi tải flash sale:', error);
+    }
+  };
 
   const loadSanPham = async () => {
     try {
@@ -418,13 +431,55 @@ function ChiTietSanPham() {
               {sanPham.ten}
             </h1>
             <div className="mb-6">
-              <span className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                {formatPrice(sanPham.gia)}
-              </span>
-              {sanPham.giaGoc && (
-                <span className="ml-4 text-xl text-gray-400 line-through font-medium">
-                  {formatPrice(sanPham.giaGoc)}
-                </span>
+              {flashSale ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-lg font-bold text-sm">
+                      <HiOutlineFire className="w-5 h-5" />
+                      Flash Sale -{flashSale.phanTramGiam}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
+                      {formatPrice(flashSale.giaFlashSale)}
+                    </span>
+                    <span className="text-2xl text-gray-400 line-through font-medium">
+                      {formatPrice(sanPham.gia)}
+                    </span>
+                  </div>
+                  {flashSale.soLuongToiDa > 0 && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-gray-600 font-medium">Đã bán</span>
+                        <span className="text-gray-800 font-bold">
+                          {flashSale.soLuongDaBan}/{flashSale.soLuongToiDa}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-red-500 to-pink-500 h-3 rounded-full transition-all duration-300"
+                          style={{ 
+                            width: `${Math.min(100, (flashSale.soLuongDaBan / flashSale.soLuongToiDa) * 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Còn lại: {flashSale.soLuongToiDa - flashSale.soLuongDaBan} sản phẩm
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <span className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                    {formatPrice(sanPham.gia)}
+                  </span>
+                  {sanPham.giaGoc && (
+                    <span className="ml-4 text-xl text-gray-400 line-through font-medium">
+                      {formatPrice(sanPham.giaGoc)}
+                    </span>
+                  )}
+                </>
               )}
             </div>
             {sanPham.moTa && (

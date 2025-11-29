@@ -27,6 +27,12 @@ namespace ShopBanDoTheThao.Server.Data
         public DbSet<Banner> Banner { get; set; }
         public DbSet<TinNhan> TinNhan { get; set; }
         public DbSet<ThongBao> ThongBao { get; set; }
+        public DbSet<FlashSale> FlashSale { get; set; }
+        public DbSet<FlashSaleSanPham> FlashSaleSanPham { get; set; }
+        public DbSet<TaiKhoanNganHang> TaiKhoanNganHang { get; set; }
+        public DbSet<XacNhanChuyenKhoan> XacNhanChuyenKhoan { get; set; }
+        public DbSet<Popup> Popup { get; set; }
+        public DbSet<ResetPasswordToken> ResetPasswordToken { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -163,6 +169,41 @@ namespace ShopBanDoTheThao.Server.Data
             modelBuilder.Entity<MaGiamGia>()
                 .HasIndex(m => m.Ma)
                 .IsUnique();
+
+            modelBuilder.Entity<FlashSaleSanPham>()
+                .HasOne(fs => fs.FlashSale)
+                .WithMany(f => f.DanhSachSanPham)
+                .HasForeignKey(fs => fs.FlashSaleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<FlashSaleSanPham>()
+                .HasOne(fs => fs.SanPham)
+                .WithMany()
+                .HasForeignKey(fs => fs.SanPhamId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<XacNhanChuyenKhoan>()
+                .HasOne(x => x.DonHang)
+                .WithMany()
+                .HasForeignKey(x => x.DonHangId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<XacNhanChuyenKhoan>()
+                .HasOne(x => x.NguoiDung)
+                .WithMany()
+                .HasForeignKey(x => x.NguoiDungId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<XacNhanChuyenKhoan>()
+                .HasOne(x => x.TaiKhoanNganHang)
+                .WithMany()
+                .HasForeignKey(x => x.TaiKhoanNganHangId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Cấu hình precision cho SoTien
+            modelBuilder.Entity<XacNhanChuyenKhoan>()
+                .Property(x => x.SoTien)
+                .HasPrecision(18, 2);
         }
     }
 }

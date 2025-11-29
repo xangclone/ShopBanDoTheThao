@@ -43,6 +43,16 @@ namespace ShopBanDoTheThao.Server.Controllers
             try
             {
                 var userId = GetUserId();
+                var now = DateTime.UtcNow;
+                
+                // Lấy danh sách flash sale đang diễn ra
+                var flashSales = await _context.FlashSale
+                    .Include(fs => fs.DanhSachSanPham)
+                    .Where(fs => fs.DangHoatDong &&
+                                fs.ThoiGianBatDau <= now &&
+                                fs.ThoiGianKetThuc >= now)
+                    .ToListAsync();
+
                 var gioHangItems = await _context.GioHangItem
                     .Include(g => g.SanPham)
                     .Where(g => g.NguoiDungId == userId)
@@ -66,6 +76,30 @@ namespace ShopBanDoTheThao.Server.Controllers
                         }
                     }
 
+                    // Kiểm tra flash sale cho sản phẩm này
+                    decimal giaHienTai = item.SanPham.Gia;
+                    decimal? giaGoc = item.SanPham.GiaGoc;
+                    bool isFlashSale = false;
+                    int? phanTramGiam = null;
+
+                    foreach (var flashSale in flashSales)
+                    {
+                        var flashSaleSanPham = flashSale.DanhSachSanPham
+                            .FirstOrDefault(fsp => fsp.SanPhamId == item.SanPhamId && fsp.DangHoatDong);
+                        
+                        if (flashSaleSanPham != null)
+                        {
+                            giaHienTai = flashSaleSanPham.GiaFlashSale;
+                            giaGoc = item.SanPham.Gia; // Giá gốc là giá sản phẩm
+                            isFlashSale = true;
+                            if (item.SanPham.Gia > 0)
+                            {
+                                phanTramGiam = (int)(((item.SanPham.Gia - flashSaleSanPham.GiaFlashSale) / item.SanPham.Gia) * 100);
+                            }
+                            break;
+                        }
+                    }
+
                     gioHang.Add(new
                     {
                         item.Id,
@@ -77,11 +111,13 @@ namespace ShopBanDoTheThao.Server.Controllers
                         {
                             item.SanPham.Id,
                             item.SanPham.Ten,
-                            item.SanPham.Gia,
-                            item.SanPham.GiaGoc,
+                            Gia = giaHienTai,
+                            GiaGoc = giaGoc,
                             item.SanPham.HinhAnhChinh,
                             item.SanPham.Slug,
-                            SoLuongTon = soLuongTon
+                            SoLuongTon = soLuongTon,
+                            IsFlashSale = isFlashSale,
+                            PhanTramGiam = phanTramGiam
                         }
                     });
                 }

@@ -13,22 +13,26 @@ function QuanLyThongBao() {
     noiDung: '',
     loai: 'DealHot',
     sanPhamId: '',
+    lienKet: '',
+    nguoiDungIds: [],
   });
   const [sanPham, setSanPham] = useState([]);
-  const [filter, setFilter] = useState('all'); // all, DonHang, DealHot, KhuyenMai
+  const [nguoiDung, setNguoiDung] = useState([]);
+  const [filter, setFilter] = useState('all'); // all, DonHang, DealHot, KhuyenMai, CanhBao
 
   useEffect(() => {
     loadThongBao();
     loadSanPham();
-  }, [filter]);
+    if (formData.loai === 'CanhBao') {
+      loadNguoiDung();
+    }
+  }, [filter, formData.loai]);
 
   const loadThongBao = async () => {
     setLoading(true);
     try {
-      // TODO: Implement admin API to get all notifications
-      // const data = await adminService.getDanhSachThongBao(filter);
-      // setThongBao(data);
-      setThongBao([]);
+      const data = await adminService.getDanhSachThongBao(filter, 1, 100);
+      setThongBao(data?.data || []);
     } catch (error) {
       console.error('Lỗi khi tải thông báo:', error);
       toast.error('Không thể tải danh sách thông báo');
@@ -46,17 +50,47 @@ function QuanLyThongBao() {
     }
   };
 
+  const loadNguoiDung = async () => {
+    try {
+      const data = await adminService.getDanhSachNguoiDung('', 1, 1000);
+      setNguoiDung(data?.data || []);
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách người dùng:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await adminService.taoThongBaoDealHot({
-        sanPhamId: parseInt(formData.sanPhamId),
-        tieuDe: formData.tieuDe,
-        noiDung: formData.noiDung,
-      });
-      toast.success('Tạo thông báo thành công!');
+      if (formData.loai === 'DealHot') {
+        await adminService.taoThongBaoDealHot({
+          sanPhamId: parseInt(formData.sanPhamId),
+          tieuDe: formData.tieuDe,
+          noiDung: formData.noiDung,
+        });
+        toast.success('Tạo thông báo Deal Hot thành công! Đã gửi đến toàn bộ khách hàng.');
+      } else if (formData.loai === 'KhuyenMai') {
+        await adminService.taoThongBaoKhuyenMai({
+          tieuDe: formData.tieuDe,
+          noiDung: formData.noiDung,
+          lienKet: formData.lienKet || null,
+        });
+        toast.success('Tạo thông báo Khuyến mãi thành công! Đã gửi đến toàn bộ khách hàng.');
+      } else if (formData.loai === 'CanhBao') {
+        if (formData.nguoiDungIds.length === 0) {
+          toast.error('Vui lòng chọn ít nhất một khách hàng');
+          return;
+        }
+        await adminService.taoThongBaoCanhBao({
+          nguoiDungIds: formData.nguoiDungIds,
+          tieuDe: formData.tieuDe,
+          noiDung: formData.noiDung,
+          lienKet: formData.lienKet || null,
+        });
+        toast.success(`Tạo thông báo Cảnh báo thành công! Đã gửi đến ${formData.nguoiDungIds.length} khách hàng.`);
+      }
       setShowModal(false);
-      setFormData({ tieuDe: '', noiDung: '', loai: 'DealHot', sanPhamId: '' });
+      setFormData({ tieuDe: '', noiDung: '', loai: 'DealHot', sanPhamId: '', lienKet: '', nguoiDungIds: [] });
       loadThongBao();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể tạo thông báo');
@@ -71,6 +105,10 @@ function QuanLyThongBao() {
         return '🔥';
       case 'KhuyenMai':
         return '🎁';
+      case 'CanhBao':
+        return '⚠️';
+      case 'AdminDonHang':
+        return '📋';
       default:
         return '🔔';
     }
@@ -84,6 +122,10 @@ function QuanLyThongBao() {
         return 'from-red-500 to-orange-500';
       case 'KhuyenMai':
         return 'from-pink-500 to-purple-500';
+      case 'CanhBao':
+        return 'from-yellow-500 to-orange-500';
+      case 'AdminDonHang':
+        return 'from-orange-500 to-red-500';
       default:
         return 'from-gray-500 to-gray-600';
     }
@@ -106,11 +148,14 @@ function QuanLyThongBao() {
             <span>Quản lý Thông báo</span>
           </h1>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setFormData({ tieuDe: '', noiDung: '', loai: 'DealHot', sanPhamId: '', lienKet: '', nguoiDungIds: [] });
+              setShowModal(true);
+            }}
             className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-xl hover:from-pink-600 hover:to-purple-600 font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
           >
             <HiOutlinePlus className="w-5 h-5" />
-            Tạo thông báo Deal Hot
+            Tạo thông báo
           </button>
         </div>
 
@@ -146,6 +191,36 @@ function QuanLyThongBao() {
           >
             Deal Hot
           </button>
+          <button
+            onClick={() => setFilter('KhuyenMai')}
+            className={`px-4 py-2 rounded-xl font-semibold transition-all ${
+              filter === 'KhuyenMai'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                : 'bg-white/60 text-gray-700 hover:bg-white/80'
+            }`}
+          >
+            Khuyến mãi
+          </button>
+          <button
+            onClick={() => setFilter('CanhBao')}
+            className={`px-4 py-2 rounded-xl font-semibold transition-all ${
+              filter === 'CanhBao'
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                : 'bg-white/60 text-gray-700 hover:bg-white/80'
+            }`}
+          >
+            Cảnh báo
+          </button>
+          <button
+            onClick={() => setFilter('AdminDonHang')}
+            className={`px-4 py-2 rounded-xl font-semibold transition-all ${
+              filter === 'AdminDonHang'
+                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                : 'bg-white/60 text-gray-700 hover:bg-white/80'
+            }`}
+          >
+            Thông báo Admin
+          </button>
         </div>
       </div>
 
@@ -171,9 +246,10 @@ function QuanLyThongBao() {
                     <h3 className="font-bold text-gray-800 mb-1">{tb.tieuDe}</h3>
                     <p className="text-sm text-gray-600 mb-2">{tb.noiDung}</p>
                     <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>Loại: {tb.loai}</span>
-                      <span>Người nhận: {tb.nguoiDungId}</span>
+                      <span>Loại: {tb.loai === 'DealHot' ? 'Deal Hot' : tb.loai === 'KhuyenMai' ? 'Khuyến mãi' : tb.loai === 'CanhBao' ? 'Cảnh báo' : tb.loai === 'DonHang' ? 'Đơn hàng' : tb.loai === 'AdminDonHang' ? 'Thông báo Admin' : tb.loai}</span>
+                      <span>Người nhận: {tb.nguoiDung?.hoTen || tb.nguoiDung?.email || 'N/A'}</span>
                       <span>{formatVietnamDateTimeFull(new Date(tb.ngayTao))}</span>
+                      {tb.daDoc && <span className="text-green-600">✓ Đã đọc</span>}
                     </div>
                   </div>
                 </div>
@@ -183,15 +259,15 @@ function QuanLyThongBao() {
         )}
       </div>
 
-      {/* Modal tạo thông báo Deal Hot */}
+      {/* Modal tạo thông báo */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border-2 border-pink-100/50 w-full max-w-md">
+          <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border-2 border-pink-100/50 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="flex items-center gap-2 text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                  <HiOutlineFire className="w-7 h-7 text-red-600" />
-                  <span>Tạo thông báo Deal Hot</span>
+                  <HiOutlineBell className="w-7 h-7 text-pink-600" />
+                  <span>Tạo thông báo</span>
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
@@ -204,22 +280,74 @@ function QuanLyThongBao() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-bold mb-2 text-gray-700">
-                    Sản phẩm <span className="text-red-500">*</span>
+                    Loại thông báo <span className="text-red-500">*</span>
                   </label>
                   <select
                     required
-                    value={formData.sanPhamId}
-                    onChange={(e) => setFormData({ ...formData, sanPhamId: e.target.value })}
+                    value={formData.loai}
+                    onChange={(e) => setFormData({ ...formData, loai: e.target.value, sanPhamId: '', nguoiDungIds: [] })}
                     className="w-full px-4 py-3 border-2 border-pink-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 bg-white/80 backdrop-blur-sm shadow-md"
                   >
-                    <option value="">Chọn sản phẩm</option>
-                    {sanPham.map((sp) => (
-                      <option key={sp.id} value={sp.id}>
-                        {sp.ten}
-                      </option>
-                    ))}
+                    <option value="DealHot">🔥 Deal Hot (Gửi đến toàn bộ khách hàng)</option>
+                    <option value="KhuyenMai">🎁 Khuyến mãi/Voucher (Gửi đến toàn bộ khách hàng)</option>
+                    <option value="CanhBao">⚠️ Cảnh báo (Gửi riêng cho khách hàng)</option>
                   </select>
                 </div>
+
+                {formData.loai === 'DealHot' && (
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-gray-700">
+                      Sản phẩm <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={formData.sanPhamId}
+                      onChange={(e) => setFormData({ ...formData, sanPhamId: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-pink-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 bg-white/80 backdrop-blur-sm shadow-md"
+                    >
+                      <option value="">Chọn sản phẩm</option>
+                      {sanPham.map((sp) => (
+                        <option key={sp.id} value={sp.id}>
+                          {sp.ten}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {formData.loai === 'CanhBao' && (
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-gray-700">
+                      Chọn khách hàng <span className="text-red-500">*</span>
+                      <span className="text-xs text-gray-500 ml-2">({formData.nguoiDungIds.length} đã chọn)</span>
+                    </label>
+                    <div className="max-h-48 overflow-y-auto border-2 border-pink-100 rounded-xl p-3 bg-white/80 backdrop-blur-sm">
+                      {nguoiDung.length === 0 ? (
+                        <p className="text-sm text-gray-500 text-center py-4">Đang tải danh sách khách hàng...</p>
+                      ) : (
+                        nguoiDung.map((nd) => (
+                          <label key={nd.id} className="flex items-center gap-2 p-2 hover:bg-pink-50 rounded-lg cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.nguoiDungIds.includes(nd.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({ ...formData, nguoiDungIds: [...formData.nguoiDungIds, nd.id] });
+                                } else {
+                                  setFormData({ ...formData, nguoiDungIds: formData.nguoiDungIds.filter(id => id !== nd.id) });
+                                }
+                              }}
+                              className="w-4 h-4 text-pink-600 focus:ring-pink-500 rounded"
+                            />
+                            <span className="text-sm text-gray-700">
+                              {nd.ho} {nd.ten} ({nd.email})
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-bold mb-2 text-gray-700">
@@ -237,6 +365,20 @@ function QuanLyThongBao() {
 
                 <div>
                   <label className="block text-sm font-bold mb-2 text-gray-700">
+                    Tiêu đề <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.tieuDe}
+                    onChange={(e) => setFormData({ ...formData, tieuDe: e.target.value })}
+                    className="w-full px-4 py-3 border-2 border-pink-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 bg-white/80 backdrop-blur-sm shadow-md"
+                    placeholder={formData.loai === 'DealHot' ? 'Ví dụ: Deal hot - Giảm 50%' : formData.loai === 'KhuyenMai' ? 'Ví dụ: Voucher giảm 20%' : 'Ví dụ: Cảnh báo về đơn hàng'}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold mb-2 text-gray-700">
                     Nội dung <span className="text-red-500">*</span>
                   </label>
                   <textarea
@@ -245,9 +387,32 @@ function QuanLyThongBao() {
                     onChange={(e) => setFormData({ ...formData, noiDung: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-pink-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 bg-white/80 backdrop-blur-sm shadow-md"
                     rows="4"
-                    placeholder="Mô tả deal hot..."
+                    placeholder={formData.loai === 'DealHot' ? 'Mô tả deal hot...' : formData.loai === 'KhuyenMai' ? 'Mô tả khuyến mãi/voucher...' : 'Nội dung cảnh báo...'}
                   />
                 </div>
+
+                {(formData.loai === 'KhuyenMai' || formData.loai === 'CanhBao') && (
+                  <div>
+                    <label className="block text-sm font-bold mb-2 text-gray-700">
+                      Link liên kết (tùy chọn)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.lienKet}
+                      onChange={(e) => setFormData({ ...formData, lienKet: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-pink-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-400 bg-white/80 backdrop-blur-sm shadow-md"
+                      placeholder="/khuyen-mai hoặc /san-pham/123"
+                    />
+                  </div>
+                )}
+
+                {(formData.loai === 'DealHot' || formData.loai === 'KhuyenMai') && (
+                  <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-3">
+                    <p className="text-sm text-blue-700 font-semibold">
+                      ℹ️ Thông báo này sẽ được gửi đến <strong>toàn bộ khách hàng</strong> đang hoạt động.
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex gap-3 pt-4">
                   <button

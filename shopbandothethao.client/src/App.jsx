@@ -5,14 +5,18 @@ import 'react-toastify/dist/ReactToastify.css';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
 import DiscountPopup from './components/DiscountPopup';
+import PopupDisplay from './components/PopupDisplay';
 import ChatBot from './components/ChatBot';
 import TrangChu from './pages/TrangChu';
 import DanhSachSanPham from './pages/DanhSachSanPham';
 import SanPhamKhuyenMai from './pages/SanPhamKhuyenMai';
+import FlashSale from './pages/FlashSale';
 import ChiTietSanPham from './pages/ChiTietSanPham';
 import GioHang from './pages/GioHang';
 import DangNhap from './pages/DangNhap';
 import DangKy from './pages/DangKy';
+import QuenMatKhau from './pages/QuenMatKhau';
+import ResetMatKhau from './pages/ResetMatKhau';
 import DonHang from './pages/DonHang';
 import ChiTietDonHang from './pages/ChiTietDonHang';
 import ThanhToan from './pages/ThanhToan';
@@ -22,6 +26,16 @@ import ThemDiaChi from './pages/ThemDiaChi';
 import TinTuc from './pages/TinTuc';
 import ChiTietTinTuc from './pages/ChiTietTinTuc';
 import VeChungToi from './pages/VeChungToi';
+import HoTroKhachHang from './pages/HoTroKhachHang';
+import FAQ from './pages/ho-tro/FAQ';
+import HuongDanMuaHang from './pages/ho-tro/HuongDanMuaHang';
+import ChinhSachDoiTra from './pages/ho-tro/ChinhSachDoiTra';
+import ChinhSachVanChuyen from './pages/ho-tro/ChinhSachVanChuyen';
+import HuongDanThanhToan from './pages/ho-tro/HuongDanThanhToan';
+import LienHe from './pages/ho-tro/LienHe';
+import SePayCallback from './pages/SePayCallback';
+import NotFound from './pages/NotFound';
+import ThanhToanThanhCong from './pages/ThanhToanThanhCong';
 import Dashboard from './pages/admin/Dashboard';
 import QuanLyDonHang from './pages/admin/QuanLyDonHang';
 import QuanLySanPham from './pages/admin/QuanLySanPham';
@@ -30,7 +44,9 @@ import QuanLyNguoiDung from './pages/admin/QuanLyNguoiDung';
 import QuanLyDanhMuc from './pages/admin/QuanLyDanhMuc';
 import QuanLyThuongHieu from './pages/admin/QuanLyThuongHieu';
 import QuanLyMaGiamGia from './pages/admin/QuanLyMaGiamGia';
+import QuanLyFlashSale from './pages/admin/QuanLyFlashSale';
 import QuanLyBanner from './pages/admin/QuanLyBanner';
+import QuanLyPopup from './pages/admin/QuanLyPopup';
 import QuanLyTinTuc from './pages/admin/QuanLyTinTuc';
 import QuanLyDanhGia from './pages/admin/QuanLyDanhGia';
 import QuanLyChat from './pages/admin/QuanLyChat';
@@ -54,14 +70,18 @@ function AppContent() {
     <div className="min-h-screen flex flex-col">
       {!isLoginPage && !isAdminPage && <Header />}
       {!isLoginPage && !isAdminPage && <DiscountPopup />}
+      {!isLoginPage && !isAdminPage && <PopupDisplay />}
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<TrangChu />} />
           <Route path="/san-pham" element={<DanhSachSanPham />} />
           <Route path="/san-pham/khuyen-mai" element={<SanPhamKhuyenMai />} />
+          <Route path="/flash-sale/:id" element={<FlashSale />} />
           <Route path="/san-pham/:id" element={<ChiTietSanPham />} />
           <Route path="/dang-nhap" element={<DangNhap />} />
             <Route path="/dang-ky" element={<DangKy />} />
+            <Route path="/quen-mat-khau" element={<QuenMatKhau />} />
+            <Route path="/reset-mat-khau" element={<ResetMatKhau />} />
             <Route
               path="/gio-hang"
               element={
@@ -121,6 +141,21 @@ function AppContent() {
             <Route path="/tin-tuc" element={<TinTuc />} />
             <Route path="/tin-tuc/:id" element={<ChiTietTinTuc />} />
             <Route path="/ve-chung-toi" element={<VeChungToi />} />
+            
+            {/* Hỗ trợ khách hàng */}
+            <Route path="/ho-tro" element={<HoTroKhachHang />} />
+            <Route path="/ho-tro/faq" element={<FAQ />} />
+            <Route path="/ho-tro/huong-dan-mua-hang" element={<HuongDanMuaHang />} />
+            <Route path="/ho-tro/chinh-sach-doi-tra" element={<ChinhSachDoiTra />} />
+            <Route path="/ho-tro/chinh-sach-van-chuyen" element={<ChinhSachVanChuyen />} />
+            <Route path="/ho-tro/huong-dan-thanh-toan" element={<HuongDanThanhToan />} />
+            <Route path="/ho-tro/lien-he" element={<LienHe />} />
+            
+            {/* SePay Callback */}
+            <Route path="/thanh-toan/sepay/callback" element={<SePayCallback />} />
+            
+            {/* Thanh toán thành công */}
+            <Route path="/thanh-toan/thanh-cong" element={<ThanhToanThanhCong />} />
             
             {/* Admin Routes */}
             <Route
@@ -204,11 +239,31 @@ function AppContent() {
               }
             />
             <Route
+              path="/admin/flash-sale"
+              element={
+                <AdminRoute>
+                  <AdminLayout>
+                    <QuanLyFlashSale />
+                  </AdminLayout>
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/admin/banner"
               element={
                 <AdminRoute>
                   <AdminLayout>
                     <QuanLyBanner />
+                  </AdminLayout>
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/popup"
+              element={
+                <AdminRoute>
+                  <AdminLayout>
+                    <QuanLyPopup />
                   </AdminLayout>
                 </AdminRoute>
               }
@@ -273,6 +328,9 @@ function AppContent() {
                 </AdminRoute>
               }
             />
+            
+            {/* 404 - Must be last */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         {!isLoginPage && !isAdminPage && <Footer />}
