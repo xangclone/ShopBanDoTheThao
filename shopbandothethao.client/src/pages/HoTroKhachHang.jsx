@@ -57,6 +57,14 @@ function HoTroKhachHang() {
       color: 'from-orange-500 to-amber-500'
     },
     {
+      id: 'tich-diem',
+      title: 'Chính sách tích điểm',
+      description: 'Quy định về tích điểm và hạng VIP',
+      icon: HiOutlineGift,
+      link: '/ho-tro/chinh-sach-tich-diem',
+      color: 'from-yellow-500 to-orange-500'
+    },
+    {
       id: 'lien-he',
       title: 'Liên hệ với chúng tôi',
       description: 'Gửi yêu cầu hỗ trợ hoặc phản hồi',

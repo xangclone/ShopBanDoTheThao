@@ -3,14 +3,26 @@ import { Link } from 'react-router-dom';
 import { sanPhamService } from '../services/sanPhamService';
 import { danhMucService } from '../services/danhMucService';
 import { tinTucService } from '../services/tinTucService';
+import { thuongHieuService } from '../services/thuongHieuService';
 import ProductCard from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
 import BannerCarousel from '../components/BannerCarousel';
 import CategoryCarousel from '../components/CategoryCarousel';
+import BrandCarousel from '../components/BrandCarousel';
 import FlashSaleBanner from '../components/FlashSaleBanner';
 import { getImageUrl } from '../utils/imageUtils';
 import { formatVietnamDate } from '../utils/dateUtils';
-import { HiOutlineArrowUp } from 'react-icons/hi';
+import { 
+  HiOutlineArrowUp,
+  HiOutlineFire,
+  HiOutlineStar,
+  HiOutlineGift,
+  HiOutlineSparkles,
+  HiOutlineNewspaper,
+  HiOutlineClipboardList,
+  HiOutlineBookOpen,
+  HiOutlineCollection
+} from 'react-icons/hi';
 
 function TrangChu() {
   const [sanPhamNoiBat, setSanPhamNoiBat] = useState([]);
@@ -19,6 +31,7 @@ function TrangChu() {
   const [sanPhamMoi, setSanPhamMoi] = useState([]);
   const [danhMuc, setDanhMuc] = useState([]);
   const [danhMucFlat, setDanhMucFlat] = useState([]);
+  const [thuongHieu, setThuongHieu] = useState([]);
   const [tinTuc, setTinTuc] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -42,12 +55,13 @@ function TrangChu() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [noiBat, banChay, khuyenMai, moi, categories, news] = await Promise.all([
+        const [noiBat, banChay, khuyenMai, moi, categories, brands, news] = await Promise.all([
           sanPhamService.getNoiBat(8),
           sanPhamService.getBanChay(8),
           sanPhamService.getKhuyenMai(8),
           sanPhamService.getDanhSach({ page: 1, pageSize: 8, sortBy: 'NgayTao', sortOrder: 'desc' }),
           danhMucService.getDanhSach(),
+          thuongHieuService.getDanhSach(),
           tinTucService.getNoiBat(6),
         ]);
         setSanPhamNoiBat(noiBat);
@@ -70,6 +84,7 @@ function TrangChu() {
         }
         setDanhMucFlat(flatCategories);
         
+        setThuongHieu(brands || []);
         setTinTuc(news);
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
@@ -114,7 +129,7 @@ function TrangChu() {
   return (
     <div className="w-full">
       {/* Banner Carousel */}
-      <section className="container mx-auto px-4 pt-6 pb-2 animate-fade-in">
+      <section className="container mx-auto px-2 pt-3 pb-2 animate-fade-in">
         <BannerCarousel />
       </section>
 
@@ -125,13 +140,25 @@ function TrangChu() {
         subtitle="Khám phá các danh mục đa dạng"
       />
 
+      {/* Thương hiệu */}
+      <BrandCarousel
+        brands={thuongHieu}
+        title="Thương hiệu nổi bật"
+        subtitle="Các thương hiệu uy tín và chất lượng"
+      />
+
       {/* Flash Sale Banner */}
       <FlashSaleBanner />
 
       {/* Sản phẩm bán chạy */}
       <ProductCarousel
         products={sanPhamBanChay}
-        title="🔥 Sản phẩm bán chạy"
+        title={
+          <span className="flex items-center gap-3">
+            <HiOutlineFire className="w-8 h-8 text-red-600" />
+            Sản phẩm bán chạy
+          </span>
+        }
         subtitle="Những sản phẩm được yêu thích nhất"
         viewAllLink="/san-pham?sortBy=SoLuongBan&sortOrder=desc"
         titleGradient="from-red-600 to-orange-600"
@@ -147,7 +174,12 @@ function TrangChu() {
         <div className="relative z-10">
           <ProductCarousel
             products={sanPhamNoiBat}
-            title="⭐ Sản phẩm nổi bật"
+            title={
+              <span className="flex items-center gap-3">
+                <HiOutlineStar className="w-8 h-8 text-blue-600" />
+                Sản phẩm nổi bật
+              </span>
+            }
             subtitle="Sản phẩm được chọn lọc kỹ lưỡng"
             viewAllLink="/san-pham?sanPhamNoiBat=true"
             titleGradient="from-blue-600 to-purple-600"
@@ -158,7 +190,12 @@ function TrangChu() {
       {/* Sản phẩm khuyến mãi */}
       <ProductCarousel
         products={sanPhamKhuyenMai}
-        title="🎉 Sản phẩm khuyến mãi"
+        title={
+          <span className="flex items-center gap-3">
+            <HiOutlineGift className="w-8 h-8 text-red-600" />
+            Sản phẩm khuyến mãi
+          </span>
+        }
         subtitle="Ưu đãi đặc biệt hôm nay"
         viewAllLink="/san-pham/khuyen-mai"
         titleGradient="from-red-600 to-pink-600"
@@ -174,7 +211,12 @@ function TrangChu() {
         <div className="relative z-10">
           <ProductCarousel
             products={sanPhamMoi}
-            title="✨ Sản phẩm mới"
+            title={
+              <span className="flex items-center gap-3">
+                <HiOutlineSparkles className="w-8 h-8 text-emerald-600" />
+                Sản phẩm mới
+              </span>
+            }
             subtitle="Những sản phẩm mới nhất được thêm vào"
             viewAllLink="/san-pham?sortBy=NgayTao&sortOrder=desc"
             titleGradient="from-emerald-600 to-cyan-600"
@@ -191,8 +233,9 @@ function TrangChu() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex items-center justify-between mb-12 animate-slide-in-right">
             <div>
-              <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                📰 Tin tức & Cẩm nang
+              <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-3">
+                <HiOutlineNewspaper className="w-10 h-10 text-pink-600" />
+                <span>Tin tức & Cẩm nang</span>
               </h2>
               <p className="text-gray-600 text-lg font-medium">Cập nhật mới nhất về thể thao</p>
             </div>
@@ -225,8 +268,23 @@ function TrangChu() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                   {tt.loai && (
-                    <span className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-xl backdrop-blur-sm border-2 border-white/30">
-                      {tt.loai === 'HuongDan' ? '📖 Hướng dẫn' : tt.loai === 'CamNang' ? '📚 Cẩm nang' : '📰 Tin tức'}
+                    <span className="absolute top-4 left-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-xl backdrop-blur-sm border-2 border-white/30 flex items-center gap-2">
+                      {tt.loai === 'HuongDan' ? (
+                        <>
+                          <HiOutlineBookOpen className="w-4 h-4" />
+                          Hướng dẫn
+                        </>
+                      ) : tt.loai === 'CamNang' ? (
+                        <>
+                          <HiOutlineCollection className="w-4 h-4" />
+                          Cẩm nang
+                        </>
+                      ) : (
+                        <>
+                          <HiOutlineNewspaper className="w-4 h-4" />
+                          Tin tức
+                        </>
+                      )}
                     </span>
                   )}
                 </div>
@@ -264,8 +322,9 @@ function TrangChu() {
       {/* Hướng dẫn mua hàng */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12 animate-fade-in">
-          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-            📋 Hướng dẫn mua hàng
+          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent flex items-center justify-center gap-3">
+            <HiOutlineClipboardList className="w-10 h-10 text-green-600" />
+            <span>Hướng dẫn mua hàng</span>
           </h2>
           <p className="text-gray-600 text-lg">Mua sắm dễ dàng chỉ với 4 bước đơn giản</p>
         </div>

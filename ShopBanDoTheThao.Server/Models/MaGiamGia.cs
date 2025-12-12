@@ -33,7 +33,7 @@ namespace ShopBanDoTheThao.Server.Models
 
         public DateTime NgayBatDau { get; set; }
 
-        public DateTime NgayKetThuc { get; set; }
+        public DateTime? NgayKetThuc { get; set; } // Nullable để có thể có mã giảm giá vô thời hạn
 
         public bool DangHoatDong { get; set; } = true;
 

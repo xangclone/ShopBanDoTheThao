@@ -2,11 +2,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { sanPhamService } from '../../services/sanPhamService';
 import { gioHangService } from '../../services/gioHangService';
+import diemService from '../../services/diemService';
 import SidebarPopup from '../SidebarPopup';
 import AuthModal from '../AuthModal';
 import NotificationBell from '../NotificationBell';
 import { useState, useEffect, useRef } from 'react';
-import { HiOutlineHeart, HiOutlineShoppingCart, HiOutlineUser, HiOutlineSearch, HiOutlineChevronDown, HiOutlineMenu, HiOutlineX, HiOutlineArrowRight } from 'react-icons/hi';
+import { HiOutlineHeart, HiOutlineShoppingCart, HiOutlineUser, HiOutlineSearch, HiOutlineChevronDown, HiOutlineMenu, HiOutlineX, HiOutlineArrowRight, HiOutlineStar, HiOutlineGift, HiOutlineSparkles } from 'react-icons/hi';
 import { getImageUrl } from '../../utils/imageUtils';
 import ImageWithFallback from '../ImageWithFallback';
 
@@ -21,6 +22,7 @@ function Header() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarType, setSidebarType] = useState('gioHang');
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [thongTinDiem, setThongTinDiem] = useState(null);
   const searchRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
@@ -29,6 +31,7 @@ function Header() {
     setUser(currentUser);
     if (currentUser) {
       loadGioHangCount();
+      loadThongTinDiem();
     }
 
     // Kiểm tra nếu cần mở popup đăng nhập sau khi reset mật khẩu
@@ -38,6 +41,15 @@ function Header() {
       setAuthModalOpen(true);
     }
   }, []);
+
+  const loadThongTinDiem = async () => {
+    try {
+      const data = await diemService.getThongTinDiem();
+      setThongTinDiem(data);
+    } catch (error) {
+      // Ignore error if not authenticated
+    }
+  };
 
   useEffect(() => {
     // Đóng kết quả tìm kiếm khi click bên ngoài
@@ -303,7 +315,26 @@ function Header() {
                     <HiOutlineChevronDown className="w-4 h-4 hidden md:inline text-gray-600" />
                   </button>
                   {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-pink-100 py-2 z-50 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-pink-100 py-2 z-50 overflow-hidden">
+                      {/* Thông tin điểm và hạng VIP */}
+                      {thongTinDiem && (
+                        <div className="px-5 py-3 border-b border-pink-100 bg-gradient-to-r from-pink-50 to-purple-50">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600">Điểm khả dụng</span>
+                            <span className="text-lg font-bold text-pink-600">
+                              {thongTinDiem.diemKhaDung.toLocaleString('vi-VN')}
+                            </span>
+                          </div>
+                          {thongTinDiem.hangVip && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{thongTinDiem.hangVip.icon || '⭐'}</span>
+                              <span className="text-sm font-semibold text-gray-700">
+                                {thongTinDiem.hangVip.ten}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <Link
                         to="/tai-khoan"
                         onClick={() => setIsMenuOpen(false)}
@@ -311,6 +342,30 @@ function Header() {
                       >
                         <HiOutlineUser className="w-5 h-5" />
                         Tài khoản
+                      </Link>
+                      <Link
+                        to="/tich-diem"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-2 px-5 py-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 transition-all duration-300 text-gray-700 font-medium"
+                      >
+                        <HiOutlineStar className="w-5 h-5" />
+                        Tích điểm
+                      </Link>
+                      <Link
+                        to="/doi-voucher"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-2 px-5 py-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 transition-all duration-300 text-gray-700 font-medium"
+                      >
+                        <HiOutlineGift className="w-5 h-5" />
+                        Đổi voucher
+                      </Link>
+                      <Link
+                        to="/minigame"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-2 px-5 py-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 transition-all duration-300 text-gray-700 font-medium"
+                      >
+                        <HiOutlineSparkles className="w-5 h-5" />
+                        Minigame
                       </Link>
                       <Link
                         to="/don-hang"

@@ -313,5 +313,77 @@ export const adminService = {
     const response = await api.delete(`/admin/popup/${id}`);
     return response.data;
   },
+
+  // ========== QUẢN LÝ HẠNG VIP ==========
+  getDanhSachHangVip: async () => {
+    const response = await api.get('/admin/hangvip');
+    return response.data;
+  },
+
+  taoHangVip: async (data) => {
+    const response = await api.post('/admin/hangvip', data);
+    return response.data;
+  },
+
+  capNhatHangVip: async (id, data) => {
+    const response = await api.put(`/admin/hangvip/${id}`, data);
+    return response.data;
+  },
+
+  xoaHangVip: async (id) => {
+    const response = await api.delete(`/admin/hangvip/${id}`);
+    return response.data;
+  },
+
+  // ========== QUẢN LÝ VOUCHER ĐỔI ĐIỂM ==========
+  getDanhSachVoucherDoiDiem: async () => {
+    const response = await api.get('/admin/voucherdoidiem');
+    return response.data;
+  },
+
+  taoVoucherDoiDiem: async (data) => {
+    const response = await api.post('/admin/voucherdoidiem', data);
+    return response.data;
+  },
+
+  capNhatVoucherDoiDiem: async (id, data) => {
+    const response = await api.put(`/admin/voucherdoidiem/${id}`, data);
+    return response.data;
+  },
+
+  xoaVoucherDoiDiem: async (id) => {
+    const response = await api.delete(`/admin/voucherdoidiem/${id}`);
+    return response.data;
+  },
+
+  // ========== QUẢN LÝ MINIGAME ==========
+  getDanhSachMinigame: async () => {
+    const response = await api.get('/admin/minigame');
+    return response.data;
+  },
+
+  taoMinigame: async (data) => {
+    const response = await api.post('/admin/minigame', data);
+    return response.data;
+  },
+
+  capNhatMinigame: async (id, data) => {
+    const response = await api.put(`/admin/minigame/${id}`, data);
+    return response.data;
+  },
+
+  xoaMinigame: async (id) => {
+    const response = await api.delete(`/admin/minigame/${id}`);
+    return response.data;
+  },
+
+  // ========== XEM LỊCH SỬ ĐIỂM ==========
+  getLichSuDiem: async (nguoiDungId, loai, page = 1, pageSize = 20) => {
+    const params = { page, pageSize };
+    if (nguoiDungId) params.nguoiDungId = nguoiDungId;
+    if (loai) params.loai = loai;
+    const response = await api.get('/admin/lichsudiem', { params });
+    return response.data;
+  },
 };
 

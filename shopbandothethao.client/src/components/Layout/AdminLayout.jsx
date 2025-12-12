@@ -1,28 +1,146 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { authService } from '../../services/authService';
+import { 
+  HiOutlineHome, 
+  HiOutlineChartBar,
+  HiOutlineShoppingBag,
+  HiOutlineCube,
+  HiOutlineUsers,
+  HiOutlineTag,
+  HiOutlineTicket,
+  HiOutlineLightningBolt,
+  HiOutlinePhotograph,
+  HiOutlineChat,
+  HiOutlineNewspaper,
+  HiOutlineStar,
+  HiOutlineBell,
+  HiOutlineGift,
+  HiOutlineSparkles,
+  HiOutlineCollection,
+  HiOutlineFolder,
+  HiOutlineLogout
+} from 'react-icons/hi';
+import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
 
 function AdminLayout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const user = authService.getUser();
 
-  const menuItems = [
-    { path: '/admin', label: 'Dashboard', icon: '📊' },
-    { path: '/admin/san-pham', label: 'Quản lý sản phẩm', icon: '📦' },
-    { path: '/admin/kho', label: 'Quản lý kho', icon: '📋' },
-    { path: '/admin/don-hang', label: 'Quản lý đơn hàng', icon: '🛒' },
-    { path: '/admin/nguoi-dung', label: 'Quản lý người dùng', icon: '👥' },
-    { path: '/admin/danh-muc', label: 'Quản lý danh mục', icon: '📁' },
-    { path: '/admin/thuong-hieu', label: 'Quản lý thương hiệu', icon: '🏷️' },
-    { path: '/admin/ma-giam-gia', label: 'Mã giảm giá', icon: '🎫' },
-    { path: '/admin/flash-sale', label: 'Quản lý Flash Sale', icon: '⚡' },
-    { path: '/admin/banner', label: 'Quản lý Banner', icon: '🖼️' },
-    { path: '/admin/popup', label: 'Quản lý Popup', icon: '💬' },
-    { path: '/admin/tin-tuc', label: 'Quản lý Tin tức', icon: '📰' },
-    { path: '/admin/danh-gia', label: 'Quản lý Đánh giá', icon: '⭐' },
-    { path: '/admin/chat', label: 'Quản lý Chat', icon: '💬' },
-    { path: '/admin/thong-bao', label: 'Quản lý Thông báo', icon: '🔔' },
+  const isActive = (path) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const menuGroups = [
+    {
+      id: 'dashboard',
+      label: 'Tổng quan',
+      icon: HiOutlineChartBar,
+      items: [
+        { path: '/admin', label: 'Dashboard', icon: HiOutlineChartBar },
+      ]
+    },
+    {
+      id: 'products',
+      label: 'Sản phẩm',
+      icon: HiOutlineCube,
+      items: [
+        { path: '/admin/san-pham', label: 'Sản phẩm & Biến thể', icon: HiOutlineCube },
+        { path: '/admin/danh-muc', label: 'Danh mục', icon: HiOutlineFolder },
+        { path: '/admin/thuong-hieu', label: 'Thương hiệu', icon: HiOutlineTag },
+        { path: '/admin/danh-gia', label: 'Đánh giá', icon: HiOutlineStar },
+      ]
+    },
+    {
+      id: 'orders',
+      label: 'Đơn hàng',
+      icon: HiOutlineShoppingBag,
+      items: [
+        { path: '/admin/don-hang', label: 'Quản lý đơn hàng', icon: HiOutlineShoppingBag },
+      ]
+    },
+    {
+      id: 'marketing',
+      label: 'Marketing',
+      icon: HiOutlineTicket,
+      items: [
+        { path: '/admin/ma-giam-gia', label: 'Mã giảm giá', icon: HiOutlineTicket },
+        { path: '/admin/flash-sale', label: 'Flash Sale', icon: HiOutlineLightningBolt },
+        { path: '/admin/banner', label: 'Banner', icon: HiOutlinePhotograph },
+        { path: '/admin/popup', label: 'Popup', icon: HiOutlineChat },
+      ]
+    },
+    {
+      id: 'content',
+      label: 'Nội dung',
+      icon: HiOutlineNewspaper,
+      items: [
+        { path: '/admin/tin-tuc', label: 'Tin tức', icon: HiOutlineNewspaper },
+      ]
+    },
+    {
+      id: 'system',
+      label: 'Hệ thống',
+      icon: HiOutlineUsers,
+      items: [
+        { path: '/admin/nguoi-dung', label: 'Người dùng', icon: HiOutlineUsers },
+        { path: '/admin/hang-vip', label: 'Hạng VIP', icon: HiOutlineStar },
+        { path: '/admin/voucher-doi-diem', label: 'Voucher đổi điểm', icon: HiOutlineGift },
+        { path: '/admin/lich-su-diem', label: 'Lịch sử điểm', icon: HiOutlineCollection },
+        { path: '/admin/minigame', label: 'Minigame', icon: HiOutlineSparkles },
+        { path: '/admin/chat', label: 'Chat', icon: HiOutlineChat },
+        { path: '/admin/thong-bao', label: 'Thông báo', icon: HiOutlineBell },
+      ]
+    },
   ];
+
+  const [expandedGroups, setExpandedGroups] = useState(() => {
+    // Load từ localStorage hoặc mặc định
+    const saved = localStorage.getItem('adminMenuExpanded');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Nếu parse lỗi, dùng mặc định
+      }
+    }
+    return {
+      dashboard: true,
+      products: true,
+      orders: true,
+      marketing: false,
+      content: false,
+      system: false,
+    };
+  });
+
+  // Tự động mở group có item đang active
+  useEffect(() => {
+    menuGroups.forEach(group => {
+      if (group.items.some(item => isActive(item.path))) {
+        setExpandedGroups(prev => ({
+          ...prev,
+          [group.id]: true
+        }));
+      }
+    });
+  }, [location.pathname]);
+
+  const toggleGroup = (group) => {
+    setExpandedGroups(prev => {
+      const newState = {
+        ...prev,
+        [group]: !prev[group]
+      };
+      // Lưu vào localStorage
+      localStorage.setItem('adminMenuExpanded', JSON.stringify(newState));
+      return newState;
+    });
+  };
 
   const handleDangXuat = () => {
     authService.dangXuat();
@@ -39,44 +157,96 @@ function AdminLayout({ children }) {
       </div>
 
       {/* Sidebar - Glassmorphism */}
-      <div className="w-64 backdrop-blur-xl bg-white/20 border-r border-white/30 shadow-2xl flex flex-col relative z-10">
+      <div className="w-72 backdrop-blur-xl bg-white/20 border-r border-white/30 shadow-2xl flex flex-col relative z-10">
         <div className="p-6 border-b border-white/20">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Admin Panel
           </h1>
-          <p className="text-sm text-gray-700 mt-1 font-medium">{user?.ho} {user?.ten}</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">{user?.ho} {user?.ten}</p>
         </div>
         
-        <nav className="flex-1 overflow-y-auto p-4">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all duration-300 ${
-                location.pathname === item.path
-                  ? 'bg-white/40 backdrop-blur-md text-indigo-700 font-semibold shadow-lg border border-white/50'
-                  : 'text-gray-700 hover:bg-white/30 hover:backdrop-blur-md hover:shadow-md border border-transparent hover:border-white/30'
-              }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          {menuGroups.map((group) => {
+            const GroupIcon = group.icon;
+            const isGroupExpanded = expandedGroups[group.id];
+            const hasActiveItem = group.items.some(item => isActive(item.path));
+
+            return (
+              <div key={group.id} className="mb-2">
+                {group.items.length > 1 ? (
+                  <>
+                    <button
+                      onClick={() => toggleGroup(group.id)}
+                      className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg mb-1 transition-all duration-200 ${
+                        hasActiveItem
+                          ? 'bg-white/30 text-indigo-700 font-semibold'
+                          : 'text-gray-700 hover:bg-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <GroupIcon className="w-5 h-5" />
+                        <span className="text-sm font-medium">{group.label}</span>
+                      </div>
+                      {isGroupExpanded ? (
+                        <HiChevronDown className="w-4 h-4" />
+                      ) : (
+                        <HiChevronRight className="w-4 h-4" />
+                      )}
+                    </button>
+                    {isGroupExpanded && (
+                      <div className="ml-4 pl-4 border-l-2 border-white/20 space-y-1">
+                        {group.items.map((item) => {
+                          const ItemIcon = item.icon;
+                          const active = isActive(item.path);
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                active
+                                  ? 'bg-white/40 backdrop-blur-md text-indigo-700 font-semibold shadow-md border border-white/50'
+                                  : 'text-gray-600 hover:bg-white/25 hover:text-gray-800'
+                              }`}
+                            >
+                              <ItemIcon className="w-4 h-4" />
+                              <span>{item.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    to={group.items[0].path}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                      isActive(group.items[0].path)
+                        ? 'bg-white/40 backdrop-blur-md text-indigo-700 font-semibold shadow-md border border-white/50'
+                        : 'text-gray-700 hover:bg-white/25'
+                    }`}
+                  >
+                    <GroupIcon className="w-5 h-5" />
+                    <span className="text-sm font-medium">{group.items[0].label}</span>
+                  </Link>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
-        <div className="p-4 border-t border-white/20">
+        <div className="p-4 border-t border-white/20 space-y-2">
           <Link
             to="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-white/30 hover:backdrop-blur-md hover:shadow-md mb-2 transition-all duration-300 border border-transparent hover:border-white/30"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-700 hover:bg-white/25 transition-all duration-200 text-sm font-medium"
           >
-            <span className="text-xl">🏠</span>
+            <HiOutlineHome className="w-5 h-5" />
             <span>Về trang chủ</span>
           </Link>
           <button
             onClick={handleDangXuat}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-white/30 hover:backdrop-blur-md hover:shadow-md transition-all duration-300 border border-transparent hover:border-white/30"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-gray-700 hover:bg-white/25 transition-all duration-200 text-sm font-medium"
           >
-            <span className="text-xl">🚪</span>
+            <HiOutlineLogout className="w-5 h-5" />
             <span>Đăng xuất</span>
           </button>
         </div>

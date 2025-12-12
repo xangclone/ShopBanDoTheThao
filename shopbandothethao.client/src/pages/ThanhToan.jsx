@@ -6,6 +6,7 @@ import { diaChiService } from '../services/diaChiService';
 import { authService } from '../services/authService';
 import { maGiamGiaService } from '../services/maGiamGiaService';
 import { sePayService } from '../services/sePayService';
+import diemService from '../services/diemService';
 import { toast } from 'react-toastify';
 import { 
   HiOutlineCreditCard, 
@@ -31,7 +32,9 @@ function ThanhToan() {
     ghiChu: '',
   });
   const [maGiamGiaInfo, setMaGiamGiaInfo] = useState(null); // Thông tin mã giảm giá đã áp dụng
-  const [giamGia, setGiamGia] = useState(0); // Số tiền giảm giá
+  const [giamGia, setGiamGia] = useState(0); // Số tiền giảm giá từ mã giảm giá
+  const [giamGiaVip, setGiamGiaVip] = useState(0); // Số tiền giảm giá từ hạng VIP
+  const [hangVip, setHangVip] = useState(null); // Thông tin hạng VIP
   const [donHangMoiTao, setDonHangMoiTao] = useState(null);
 
   useEffect(() => {
@@ -48,6 +51,15 @@ function ThanhToan() {
         gioHangService.getGioHang(),
         diaChiService.getDanhSach(),
       ]);
+      
+      // Load thông tin VIP riêng để tránh lỗi ảnh hưởng đến các request khác
+      let thongTinDiem = null;
+      try {
+        thongTinDiem = await diemService.getThongTinDiem();
+      } catch (error) {
+        console.warn('Không thể tải thông tin VIP:', error);
+        // Tiếp tục xử lý mà không có thông tin VIP
+      }
       
       console.log('Giỏ hàng loaded:', cart);
       console.log('Số lượng sản phẩm trong giỏ:', cart?.length || 0);
@@ -83,6 +95,11 @@ function ThanhToan() {
       setDiaChi(addresses);
       setPhuongThucThanhToan([]); // TODO: Load payment methods when API is ready
       
+      // Lưu thông tin VIP
+      if (thongTinDiem?.hangVip) {
+        setHangVip(thongTinDiem.hangVip);
+      }
+      
       // Tự động chọn địa chỉ mặc định nếu có
       const diaChiMacDinh = addresses.find(dc => dc.macDinh);
       if (diaChiMacDinh) {
@@ -111,9 +128,20 @@ function ThanhToan() {
     0
   );
 
+  // Tính chiết khấu VIP (sau mã giảm giá)
+  useEffect(() => {
+    if (hangVip && hangVip.tiLeGiamGia > 0) {
+      const tienSauMaGiamGia = tongTienSanPham - giamGia;
+      const giamGiaVipValue = tienSauMaGiamGia * (hangVip.tiLeGiamGia / 100);
+      setGiamGiaVip(giamGiaVipValue);
+    } else {
+      setGiamGiaVip(0);
+    }
+  }, [tongTienSanPham, giamGia, hangVip]);
+
   const phiVanChuyen = 30000;
-  const thue = (tongTienSanPham - giamGia) * 0.1;
-  const tongTien = tongTienSanPham - giamGia + phiVanChuyen + thue;
+  const tongGiamGia = giamGia + giamGiaVip; // Tổng giảm giá = mã giảm giá + chiết khấu VIP
+  const tongTien = tongTienSanPham - tongGiamGia + phiVanChuyen; // Bỏ VAT
 
   // Hàm xử lý áp dụng mã giảm giá
   const handleApDungMaGiamGia = async () => {
@@ -501,17 +529,19 @@ function ThanhToan() {
               </div>
               {giamGia > 0 && (
                 <div className="flex justify-between text-emerald-600 font-bold">
-                  <span>Giảm giá:</span>
+                  <span>Giảm giá (Mã giảm giá):</span>
                   <span>-{formatPrice(giamGia)}</span>
+                </div>
+              )}
+              {giamGiaVip > 0 && hangVip && (
+                <div className="flex justify-between text-purple-600 font-bold">
+                  <span>Chiết khấu VIP ({hangVip.ten} - {hangVip.tiLeGiamGia}%):</span>
+                  <span>-{formatPrice(giamGiaVip)}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-700 font-medium">
                 <span>Phí vận chuyển:</span>
                 <span>{formatPrice(phiVanChuyen)}</span>
-              </div>
-              <div className="flex justify-between text-gray-700 font-medium">
-                <span>Thuế VAT (10%):</span>
-                <span>{formatPrice(thue)}</span>
               </div>
               <div className="border-t-2 border-pink-200 pt-4 flex justify-between font-bold text-xl">
                 <span className="text-gray-800">Tổng cộng:</span>

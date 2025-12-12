@@ -38,7 +38,11 @@ namespace ShopBanDoTheThao.Server.Models
 
         public string VaiTro { get; set; } = "KhachHang"; // KhachHang, QuanTriVien
 
-        public int DiemTichLuy { get; set; } = 0;
+        public int DiemTichLuy { get; set; } = 0; // Tổng điểm tích lũy (từ trước đến nay)
+
+        public int DiemKhaDung { get; set; } = 0; // Điểm khả dụng (có thể dùng để đổi voucher)
+
+        public int? HangVipId { get; set; } // Hạng VIP hiện tại
 
         public string? GoogleId { get; set; }
 
@@ -57,6 +61,9 @@ namespace ShopBanDoTheThao.Server.Models
         public virtual ICollection<GioHangItem> DanhSachGioHang { get; set; } = new List<GioHangItem>();
         public virtual ICollection<YeuThichItem> DanhSachYeuThich { get; set; } = new List<YeuThichItem>();
         public virtual ICollection<DanhGiaSanPham> DanhSachDanhGia { get; set; } = new List<DanhGiaSanPham>();
+
+        [ForeignKey("HangVipId")]
+        public virtual HangVip? HangVip { get; set; }
     }
 }
 

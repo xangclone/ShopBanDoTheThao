@@ -21,6 +21,9 @@ import DonHang from './pages/DonHang';
 import ChiTietDonHang from './pages/ChiTietDonHang';
 import ThanhToan from './pages/ThanhToan';
 import TaiKhoan from './pages/TaiKhoan';
+import TichDiem from './pages/TichDiem';
+import DoiVoucher from './pages/DoiVoucher';
+import Minigame from './pages/Minigame';
 import YeuThich from './pages/YeuThich';
 import ThemDiaChi from './pages/ThemDiaChi';
 import TinTuc from './pages/TinTuc';
@@ -31,6 +34,7 @@ import FAQ from './pages/ho-tro/FAQ';
 import HuongDanMuaHang from './pages/ho-tro/HuongDanMuaHang';
 import ChinhSachDoiTra from './pages/ho-tro/ChinhSachDoiTra';
 import ChinhSachVanChuyen from './pages/ho-tro/ChinhSachVanChuyen';
+import ChinhSachTichDiem from './pages/ho-tro/ChinhSachTichDiem';
 import HuongDanThanhToan from './pages/ho-tro/HuongDanThanhToan';
 import LienHe from './pages/ho-tro/LienHe';
 import SePayCallback from './pages/SePayCallback';
@@ -39,7 +43,6 @@ import ThanhToanThanhCong from './pages/ThanhToanThanhCong';
 import Dashboard from './pages/admin/Dashboard';
 import QuanLyDonHang from './pages/admin/QuanLyDonHang';
 import QuanLySanPham from './pages/admin/QuanLySanPham';
-import QuanLyKho from './pages/admin/QuanLyKho';
 import QuanLyNguoiDung from './pages/admin/QuanLyNguoiDung';
 import QuanLyDanhMuc from './pages/admin/QuanLyDanhMuc';
 import QuanLyThuongHieu from './pages/admin/QuanLyThuongHieu';
@@ -51,6 +54,10 @@ import QuanLyTinTuc from './pages/admin/QuanLyTinTuc';
 import QuanLyDanhGia from './pages/admin/QuanLyDanhGia';
 import QuanLyChat from './pages/admin/QuanLyChat';
 import QuanLyThongBao from './pages/admin/QuanLyThongBao';
+import QuanLyHangVip from './pages/admin/QuanLyHangVip';
+import QuanLyVoucherDoiDiem from './pages/admin/QuanLyVoucherDoiDiem';
+import QuanLyMinigame from './pages/admin/QuanLyMinigame';
+import QuanLyLichSuDiem from './pages/admin/QuanLyLichSuDiem';
 import ChiTietDoanhThu from './pages/admin/ChiTietDoanhThu';
 import ChiTietDonHangAdmin from './pages/admin/ChiTietDonHang';
 import AdminLayout from './components/Layout/AdminLayout';
@@ -69,7 +76,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
       {!isLoginPage && !isAdminPage && <Header />}
-      {!isLoginPage && !isAdminPage && <DiscountPopup />}
+      {/* {!isLoginPage && !isAdminPage && <DiscountPopup />} */}
       {!isLoginPage && !isAdminPage && <PopupDisplay />}
       <main className="flex-grow">
         <Routes>
@@ -123,6 +130,30 @@ function AppContent() {
               }
             />
             <Route
+              path="/tich-diem"
+              element={
+                <ProtectedRoute>
+                  <TichDiem />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/doi-voucher"
+              element={
+                <ProtectedRoute>
+                  <DoiVoucher />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/minigame"
+              element={
+                <ProtectedRoute>
+                  <Minigame />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/yeu-thich"
               element={
                 <ProtectedRoute>
@@ -148,6 +179,7 @@ function AppContent() {
             <Route path="/ho-tro/huong-dan-mua-hang" element={<HuongDanMuaHang />} />
             <Route path="/ho-tro/chinh-sach-doi-tra" element={<ChinhSachDoiTra />} />
             <Route path="/ho-tro/chinh-sach-van-chuyen" element={<ChinhSachVanChuyen />} />
+            <Route path="/ho-tro/chinh-sach-tich-diem" element={<ChinhSachTichDiem />} />
             <Route path="/ho-tro/huong-dan-thanh-toan" element={<HuongDanThanhToan />} />
             <Route path="/ho-tro/lien-he" element={<LienHe />} />
             
@@ -193,7 +225,7 @@ function AppContent() {
               element={
                 <AdminRoute>
                   <AdminLayout>
-                    <QuanLyKho />
+                    <Navigate to="/admin/san-pham?tab=bienThe" replace />
                   </AdminLayout>
                 </AdminRoute>
               }
@@ -304,6 +336,46 @@ function AppContent() {
                 <AdminRoute>
                   <AdminLayout>
                     <QuanLyThongBao />
+                  </AdminLayout>
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/hang-vip"
+              element={
+                <AdminRoute>
+                  <AdminLayout>
+                    <QuanLyHangVip />
+                  </AdminLayout>
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/voucher-doi-diem"
+              element={
+                <AdminRoute>
+                  <AdminLayout>
+                    <QuanLyVoucherDoiDiem />
+                  </AdminLayout>
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/minigame"
+              element={
+                <AdminRoute>
+                  <AdminLayout>
+                    <QuanLyMinigame />
+                  </AdminLayout>
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/lich-su-diem"
+              element={
+                <AdminRoute>
+                  <AdminLayout>
+                    <QuanLyLichSuDiem />
                   </AdminLayout>
                 </AdminRoute>
               }

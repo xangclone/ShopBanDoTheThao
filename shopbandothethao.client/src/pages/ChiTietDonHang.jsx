@@ -16,7 +16,8 @@ function ChiTietDonHang() {
   const [danhGiaModal, setDanhGiaModal] = useState({ isOpen: false, sanPham: null });
   const [daDanhGia, setDaDanhGia] = useState({}); // { sanPhamId: true/false }
   const [hoanTraModal, setHoanTraModal] = useState({ isOpen: false, lyDo: '' });
-  const [trackingModal, setTrackingModal] = useState({ isOpen: false, maVanDon: '', viTriHienTai: '', phuongThucGiaoHang: '' });
+  // Đã tắt tính năng cập nhật tracking cho khách hàng
+  // const [trackingModal, setTrackingModal] = useState({ isOpen: false, maVanDon: '', viTriHienTai: '', phuongThucGiaoHang: '' });
   const [huyDonModal, setHuyDonModal] = useState({ isOpen: false, lyDoHuy: '', lyDoHuyTuChon: '' });
 
   useEffect(() => {
@@ -101,20 +102,21 @@ function ChiTietDonHang() {
     }
   };
 
-  const handleCapNhatTracking = async () => {
-    try {
-      await donHangService.capNhatTracking(id, {
-        maVanDon: trackingModal.maVanDon || undefined,
-        viTriHienTai: trackingModal.viTriHienTai || undefined,
-        phuongThucGiaoHang: trackingModal.phuongThucGiaoHang || undefined,
-      });
-      toast.success('Cập nhật tracking thành công');
-      setTrackingModal({ isOpen: false, maVanDon: '', viTriHienTai: '', phuongThucGiaoHang: '' });
-      loadDonHang();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Không thể cập nhật tracking');
-    }
-  };
+  // Đã tắt tính năng cập nhật tracking cho khách hàng
+  // const handleCapNhatTracking = async () => {
+  //   try {
+  //     await donHangService.capNhatTracking(id, {
+  //       maVanDon: trackingModal.maVanDon || undefined,
+  //       viTriHienTai: trackingModal.viTriHienTai || undefined,
+  //       phuongThucGiaoHang: trackingModal.phuongThucGiaoHang || undefined,
+  //     });
+  //     toast.success('Cập nhật tracking thành công');
+  //     setTrackingModal({ isOpen: false, maVanDon: '', viTriHienTai: '', phuongThucGiaoHang: '' });
+  //     loadDonHang();
+  //   } catch (error) {
+  //     toast.error(error.response?.data?.message || 'Không thể cập nhật tracking');
+  //   }
+  // };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -152,6 +154,16 @@ function ChiTietDonHang() {
       'HoanTra': 'Hoàn trả'
     };
     return labels[trangThai] || trangThai;
+  };
+
+  const getTrangThaiThanhToanLabel = (trangThaiThanhToan) => {
+    const labels = {
+      'ChuaThanhToan': 'Chưa thanh toán',
+      'DaThanhToan': 'Đã thanh toán',
+      'DangXuLy': 'Đang xử lý',
+      'ThatBai': 'Thất bại'
+    };
+    return labels[trangThaiThanhToan] || trangThaiThanhToan;
   };
 
   if (loading) {
@@ -192,7 +204,7 @@ function ChiTietDonHang() {
           </div>
           <div>
             <h3 className="font-semibold mb-2">Trạng thái thanh toán</h3>
-            <p className="text-gray-600">{donHang.trangThaiThanhToan}</p>
+            <p className="text-gray-600">{getTrangThaiThanhToanLabel(donHang.trangThaiThanhToan)}</p>
           </div>
         </div>
 
@@ -213,7 +225,8 @@ function ChiTietDonHang() {
               Yêu cầu hoàn trả
             </button>
           )}
-          {(donHang.trangThai === 'DangGiao' || donHang.trangThai === 'DaGiao') && (
+          {/* Đã tắt tính năng cập nhật tracking cho khách hàng */}
+          {/* {(donHang.trangThai === 'DangGiao' || donHang.trangThai === 'DaGiao') && (
             <button
               onClick={() => setTrackingModal({ 
                 isOpen: true, 
@@ -225,7 +238,7 @@ function ChiTietDonHang() {
             >
               Cập nhật tracking
             </button>
-          )}
+          )} */}
         </div>
       </div>
 
@@ -333,10 +346,12 @@ function ChiTietDonHang() {
               <span>-{formatPrice(donHang.giamGia)}</span>
             </div>
           )}
-          <div className="flex justify-between">
-            <span>Thuế VAT:</span>
-            <span>{formatPrice(donHang.thue)}</span>
-          </div>
+          {donHang.thue > 0 && (
+            <div className="flex justify-between">
+              <span>Thuế VAT:</span>
+              <span>{formatPrice(donHang.thue)}</span>
+            </div>
+          )}
           <div className="border-t pt-2 flex justify-between font-bold text-lg">
             <span>Tổng cộng:</span>
             <span className="text-blue-600">{formatPrice(donHang.tongTien)}</span>
@@ -389,8 +404,9 @@ function ChiTietDonHang() {
         </div>
       )}
 
+      {/* Đã tắt tính năng cập nhật tracking cho khách hàng */}
       {/* Modal cập nhật tracking */}
-      {trackingModal.isOpen && (
+      {/* {trackingModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="p-6">
@@ -444,7 +460,7 @@ function ChiTietDonHang() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Modal Hủy đơn hàng */}
       {huyDonModal.isOpen && (

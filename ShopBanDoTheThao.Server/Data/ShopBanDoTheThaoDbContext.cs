@@ -33,6 +33,11 @@ namespace ShopBanDoTheThao.Server.Data
         public DbSet<XacNhanChuyenKhoan> XacNhanChuyenKhoan { get; set; }
         public DbSet<Popup> Popup { get; set; }
         public DbSet<ResetPasswordToken> ResetPasswordToken { get; set; }
+        public DbSet<HangVip> HangVip { get; set; }
+        public DbSet<LichSuDiem> LichSuDiem { get; set; }
+        public DbSet<VoucherDoiDiem> VoucherDoiDiem { get; set; }
+        public DbSet<Minigame> Minigame { get; set; }
+        public DbSet<KetQuaMinigame> KetQuaMinigame { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -204,6 +209,61 @@ namespace ShopBanDoTheThao.Server.Data
             modelBuilder.Entity<XacNhanChuyenKhoan>()
                 .Property(x => x.SoTien)
                 .HasPrecision(18, 2);
+
+            // Cấu hình quan hệ cho hệ thống điểm và VIP
+            modelBuilder.Entity<NguoiDung>()
+                .HasOne(u => u.HangVip)
+                .WithMany(h => h.DanhSachNguoiDung)
+                .HasForeignKey(u => u.HangVipId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<LichSuDiem>()
+                .HasOne(l => l.NguoiDung)
+                .WithMany()
+                .HasForeignKey(l => l.NguoiDungId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LichSuDiem>()
+                .HasOne(l => l.DonHang)
+                .WithMany()
+                .HasForeignKey(l => l.DonHangId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<LichSuDiem>()
+                .HasOne(l => l.VoucherDoiDiem)
+                .WithMany(v => v.DanhSachLichSuDiem)
+                .HasForeignKey(l => l.VoucherDoiDiemId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<LichSuDiem>()
+                .HasOne(l => l.Minigame)
+                .WithMany()
+                .HasForeignKey(l => l.MinigameId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<VoucherDoiDiem>()
+                .HasOne(v => v.MaGiamGia)
+                .WithMany()
+                .HasForeignKey(v => v.MaGiamGiaId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<KetQuaMinigame>()
+                .HasOne(k => k.NguoiDung)
+                .WithMany()
+                .HasForeignKey(k => k.NguoiDungId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<KetQuaMinigame>()
+                .HasOne(k => k.Minigame)
+                .WithMany(m => m.DanhSachKetQua)
+                .HasForeignKey(k => k.MinigameId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<KetQuaMinigame>()
+                .HasOne(k => k.VoucherDoiDiem)
+                .WithMany()
+                .HasForeignKey(k => k.VoucherDoiDiemId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

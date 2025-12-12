@@ -46,8 +46,8 @@ function ProductCarousel({ products, title, subtitle, viewAllLink, titleGradient
     <section className="container mx-auto px-4 py-16 relative">
       <div className="flex items-center justify-between mb-12 animate-slide-in-left">
         <div>
-          <h2 className={`text-5xl font-bold mb-4 bg-gradient-to-r ${titleGradient} bg-clip-text text-transparent`}>
-            {title}
+          <h2 className={`text-5xl font-bold mb-4 bg-gradient-to-r ${titleGradient} bg-clip-text text-transparent flex items-center`}>
+            {typeof title === 'string' ? title : title}
           </h2>
           {subtitle && <p className="text-gray-600 text-lg font-medium">{subtitle}</p>}
         </div>

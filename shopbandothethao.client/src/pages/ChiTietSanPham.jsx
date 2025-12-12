@@ -211,6 +211,9 @@ function ChiTietSanPham() {
         }
       }
     }
+    
+    // Reset số lượng về 1 khi đổi size
+    setSoLuong(1);
   };
 
   // Xử lý khi chọn màu sắc
@@ -232,6 +235,9 @@ function ChiTietSanPham() {
         }
       }
     }
+    
+    // Reset số lượng về 1 khi đổi màu
+    setSoLuong(1);
   };
 
   // Cập nhật hình ảnh khi kichThuoc hoặc mauSac thay đổi
@@ -256,6 +262,31 @@ function ChiTietSanPham() {
     }
   }, [kichThuoc, mauSac, sanPham?.id]);
 
+  // Cập nhật số lượng đặt hàng khi số lượng tồn kho thay đổi
+  useEffect(() => {
+    if (!sanPham) return;
+    
+    // Tính số lượng tồn kho hiện tại
+    let availableQty = 0;
+    if (sanPham.danhSachBienThe && sanPham.danhSachBienThe.length > 0) {
+      const variant = sanPham.danhSachBienThe.find(v => 
+        v.kichThuoc === kichThuoc && v.mauSac === mauSac
+      );
+      availableQty = variant ? variant.soLuongTon : (sanPham.soLuongTon || 0);
+    } else {
+      availableQty = sanPham.soLuongTon || 0;
+    }
+    
+    // Cập nhật số lượng đặt hàng
+    if (soLuong > availableQty && availableQty > 0) {
+      setSoLuong(availableQty);
+    } else if (availableQty <= 0 && soLuong > 0) {
+      setSoLuong(0);
+    } else if (availableQty > 0 && soLuong === 0) {
+      setSoLuong(1);
+    }
+  }, [sanPham, kichThuoc, mauSac]);
+
   const handleThemVaoGioHang = async () => {
     if (!authService.isAuthenticated()) {
       toast.error('Vui lòng đăng nhập để thêm vào giỏ hàng');
@@ -263,6 +294,11 @@ function ChiTietSanPham() {
     }
 
     const availableQty = getAvailableQuantity();
+    if (availableQty <= 0) {
+      toast.error('Sản phẩm đã hết hàng');
+      return;
+    }
+
     if (soLuong > availableQty) {
       toast.error(`Chỉ còn ${availableQty} sản phẩm trong kho`);
       setSoLuong(Math.max(1, availableQty));
@@ -277,6 +313,17 @@ function ChiTietSanPham() {
         mauSac: mauSac || null,
       });
       toast.success('Đã thêm vào giỏ hàng!');
+      
+      // Reload lại sản phẩm để cập nhật số lượng tồn kho
+      await loadSanPham();
+      
+      // Reset số lượng về 1 nếu hết hàng
+      const newAvailableQty = getAvailableQuantity();
+      if (newAvailableQty <= 0) {
+        setSoLuong(0);
+      } else if (soLuong > newAvailableQty) {
+        setSoLuong(newAvailableQty);
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể thêm vào giỏ hàng');
     }
@@ -305,6 +352,11 @@ function ChiTietSanPham() {
     }
 
     const availableQty = getAvailableQuantity();
+    if (availableQty <= 0) {
+      toast.error('Sản phẩm đã hết hàng');
+      return;
+    }
+
     if (soLuong > availableQty) {
       toast.error(`Chỉ còn ${availableQty} sản phẩm trong kho`);
       setSoLuong(Math.max(1, availableQty));
@@ -604,7 +656,14 @@ function ChiTietSanPham() {
           {/* Ô Mua ngay và Tư vấn */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Ô Mua ngay */}
-            <div className="bg-gradient-to-br from-pink-100 to-rose-100 border-2 border-pink-300 rounded-3xl p-5 hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:scale-105" onClick={handleMuaNgay}>
+            <div 
+              className={`bg-gradient-to-br from-pink-100 to-rose-100 border-2 border-pink-300 rounded-3xl p-5 transition-all duration-300 group ${
+                getAvailableQuantity() <= 0 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:shadow-2xl cursor-pointer hover:scale-105'
+              }`} 
+              onClick={getAvailableQuantity() > 0 ? handleMuaNgay : undefined}
+            >
               <div className="flex items-center space-x-3">
                 <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl p-4 group-hover:scale-110 transition-transform shadow-lg">
                   <HiOutlineShoppingBag className="w-7 h-7 text-white" />
@@ -634,10 +693,11 @@ function ChiTietSanPham() {
           <div className="flex space-x-4 mb-6">
             <button
               onClick={handleThemVaoGioHang}
-              className="flex items-center justify-center gap-2 flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 rounded-2xl hover:from-pink-600 hover:to-purple-600 font-bold text-lg transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105"
+              disabled={getAvailableQuantity() <= 0}
+              className="flex items-center justify-center gap-2 flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 rounded-2xl hover:from-pink-600 hover:to-purple-600 font-bold text-lg transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <HiOutlineShoppingCart className="w-5 h-5" />
-              Thêm vào giỏ hàng
+              {getAvailableQuantity() <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
             </button>
             <button
               onClick={handleThemVaoYeuThich}

@@ -485,6 +485,163 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.ToTable("GioHangItem");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.HangVip", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("DiemToiDa")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DiemToiThieu")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MauSac")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("ThuTu")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TiLeGiamGia")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TiLeTichDiem")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("HangVip");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.KetQuaMinigame", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("LoaiPhanThuong")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("MinigameId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("NgayChoi")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("NguoiDungId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SoDiemNhanDuoc")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TrangThai")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("VoucherDoiDiemId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MinigameId");
+
+                    b.HasIndex("NguoiDungId");
+
+                    b.HasIndex("VoucherDoiDiemId");
+
+                    b.ToTable("KetQuaMinigame");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.LichSuDiem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DiemSau")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DiemTruoc")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DonHangId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GhiChu")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Loai")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("MinigameId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MoTa")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("NguoiDungId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoDiem")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("VoucherDoiDiemId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DonHangId");
+
+                    b.HasIndex("MinigameId");
+
+                    b.HasIndex("NguoiDungId");
+
+                    b.HasIndex("VoucherDoiDiemId");
+
+                    b.ToTable("LichSuDiem");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.MaGiamGia", b =>
                 {
                     b.Property<int>("Id")
@@ -541,6 +698,55 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.ToTable("MaGiamGia");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.Minigame", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HinhAnh")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LoaiGame")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("NgayBatDau")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayKetThuc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SoDiemCanThi")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLanChoiToiDa")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Minigame");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.NguoiDung", b =>
                 {
                     b.Property<int>("Id")
@@ -561,6 +767,9 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.Property<bool>("DangHoatDong")
                         .HasColumnType("bit");
 
+                    b.Property<int>("DiemKhaDung")
+                        .HasColumnType("int");
+
                     b.Property<int>("DiemTichLuy")
                         .HasColumnType("int");
 
@@ -578,6 +787,9 @@ namespace ShopBanDoTheThao.Server.Migrations
 
                     b.Property<string>("GoogleId")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("HangVipId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Ho")
                         .IsRequired()
@@ -615,6 +827,8 @@ namespace ShopBanDoTheThao.Server.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("HangVipId");
 
                     b.ToTable("NguoiDung");
                 });
@@ -1163,6 +1377,79 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.ToTable("TinTuc");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.VoucherDoiDiem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DangHoatDong")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("GiaTriDonHangToiThieu")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("GiaTriGiamGia")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("GiaTriGiamGiaToiDa")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("HinhAnh")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LoaiGiamGia")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("LoaiVoucher")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("MaGiamGiaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MoTa")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("NgayBatDau")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NgayKetThuc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SoDiemCanDoi")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuong")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuongDaDoi")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Ten")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("ThuTuHienThi")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaGiamGiaId");
+
+                    b.ToTable("VoucherDoiDiem");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.XacNhanChuyenKhoan", b =>
                 {
                     b.Property<int>("Id")
@@ -1376,6 +1663,74 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.Navigation("SanPham");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.KetQuaMinigame", b =>
+                {
+                    b.HasOne("ShopBanDoTheThao.Server.Models.Minigame", "Minigame")
+                        .WithMany("DanhSachKetQua")
+                        .HasForeignKey("MinigameId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
+                        .WithMany()
+                        .HasForeignKey("NguoiDungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.VoucherDoiDiem", "VoucherDoiDiem")
+                        .WithMany()
+                        .HasForeignKey("VoucherDoiDiemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Minigame");
+
+                    b.Navigation("NguoiDung");
+
+                    b.Navigation("VoucherDoiDiem");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.LichSuDiem", b =>
+                {
+                    b.HasOne("ShopBanDoTheThao.Server.Models.DonHang", "DonHang")
+                        .WithMany()
+                        .HasForeignKey("DonHangId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.Minigame", "Minigame")
+                        .WithMany()
+                        .HasForeignKey("MinigameId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
+                        .WithMany()
+                        .HasForeignKey("NguoiDungId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ShopBanDoTheThao.Server.Models.VoucherDoiDiem", "VoucherDoiDiem")
+                        .WithMany("DanhSachLichSuDiem")
+                        .HasForeignKey("VoucherDoiDiemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("DonHang");
+
+                    b.Navigation("Minigame");
+
+                    b.Navigation("NguoiDung");
+
+                    b.Navigation("VoucherDoiDiem");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.NguoiDung", b =>
+                {
+                    b.HasOne("ShopBanDoTheThao.Server.Models.HangVip", "HangVip")
+                        .WithMany("DanhSachNguoiDung")
+                        .HasForeignKey("HangVipId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("HangVip");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.PhuongThucThanhToan", b =>
                 {
                     b.HasOne("ShopBanDoTheThao.Server.Models.NguoiDung", "NguoiDung")
@@ -1477,6 +1832,16 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.Navigation("SanPham");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.VoucherDoiDiem", b =>
+                {
+                    b.HasOne("ShopBanDoTheThao.Server.Models.MaGiamGia", "MaGiamGia")
+                        .WithMany()
+                        .HasForeignKey("MaGiamGiaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("MaGiamGia");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.XacNhanChuyenKhoan", b =>
                 {
                     b.HasOne("ShopBanDoTheThao.Server.Models.DonHang", "DonHang")
@@ -1540,6 +1905,16 @@ namespace ShopBanDoTheThao.Server.Migrations
                     b.Navigation("DanhSachSanPham");
                 });
 
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.HangVip", b =>
+                {
+                    b.Navigation("DanhSachNguoiDung");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.Minigame", b =>
+                {
+                    b.Navigation("DanhSachKetQua");
+                });
+
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.NguoiDung", b =>
                 {
                     b.Navigation("DanhSachDanhGia");
@@ -1571,6 +1946,11 @@ namespace ShopBanDoTheThao.Server.Migrations
             modelBuilder.Entity("ShopBanDoTheThao.Server.Models.ThuongHieu", b =>
                 {
                     b.Navigation("DanhSachSanPham");
+                });
+
+            modelBuilder.Entity("ShopBanDoTheThao.Server.Models.VoucherDoiDiem", b =>
+                {
+                    b.Navigation("DanhSachLichSuDiem");
                 });
 #pragma warning restore 612, 618
         }

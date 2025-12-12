@@ -480,12 +480,27 @@ namespace ShopBanDoTheThao.Server.Controllers
                 }
 
                 var trangThaiCu = donHang.TrangThai;
+                var trangThaiThanhToanCu = donHang.TrangThaiThanhToan;
+                
                 donHang.TrangThai = request.TrangThai;
                 donHang.NgayCapNhat = DateTime.UtcNow;
+
+                // Cập nhật trạng thái thanh toán nếu có trong request
+                if (!string.IsNullOrEmpty(request.TrangThaiThanhToan))
+                {
+                    donHang.TrangThaiThanhToan = request.TrangThaiThanhToan;
+                }
 
                 if (request.TrangThai == "DaGiao")
                 {
                     donHang.NgayGiao = DateTime.UtcNow;
+                    
+                    // Với COD (thanh toán khi nhận hàng), tự động cập nhật trạng thái thanh toán khi giao hàng
+                    // Nếu chưa thanh toán và không có phương thức thanh toán (COD) hoặc trạng thái thanh toán là ChuaThanhToan
+                    if (donHang.TrangThaiThanhToan == "ChuaThanhToan" && donHang.PhuongThucThanhToanId == null)
+                    {
+                        donHang.TrangThaiThanhToan = "DaThanhToan";
+                    }
                 }
 
                 // Lưu lý do hủy nếu có
@@ -495,6 +510,31 @@ namespace ShopBanDoTheThao.Server.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                // Tích điểm tự động khi thanh toán thành công - áp dụng cho mọi hình thức thanh toán
+                // Kiểm tra nếu trạng thái thanh toán đã được cập nhật thành "DaThanhToan"
+                var trangThaiThanhToanMoi = !string.IsNullOrEmpty(request.TrangThaiThanhToan) 
+                    ? request.TrangThaiThanhToan 
+                    : donHang.TrangThaiThanhToan;
+                    
+                // Tích điểm khi:
+                // 1. Trạng thái thanh toán được cập nhật thành "DaThanhToan"
+                // 2. Đơn hàng được xác nhận và đã thanh toán
+                // 3. Đơn hàng được giao (COD) và đã thanh toán
+                if (trangThaiThanhToanMoi == "DaThanhToan" && trangThaiThanhToanCu != "DaThanhToan")
+                {
+                    await Helpers.DiemHelper.TichDiemKhiThanhToan(_context, donHang.Id);
+                }
+                // Nếu đơn hàng được xác nhận và đã thanh toán nhưng chưa tích điểm, tích điểm ngay
+                else if (request.TrangThai == "DaXacNhan" && donHang.TrangThaiThanhToan == "DaThanhToan")
+                {
+                    await Helpers.DiemHelper.TichDiemKhiThanhToan(_context, donHang.Id);
+                }
+                // Nếu đơn hàng được giao và đã thanh toán (COD hoặc đã thanh toán trước), tích điểm
+                else if (request.TrangThai == "DaGiao" && donHang.TrangThaiThanhToan == "DaThanhToan")
+                {
+                    await Helpers.DiemHelper.TichDiemKhiThanhToan(_context, donHang.Id);
+                }
 
                 // Tạo thông báo tự động cho khách hàng
                 if (trangThaiCu != request.TrangThai)
@@ -1792,7 +1832,8 @@ namespace ShopBanDoTheThao.Server.Controllers
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadImage(IFormFile file)
+        [RequestSizeLimit(5242880)] // 5MB
+        public async Task<IActionResult> UploadImage([FromForm] IFormFile file)
         {
             try
             {
@@ -1801,17 +1842,35 @@ namespace ShopBanDoTheThao.Server.Controllers
                     return Forbid();
                 }
 
-                if (file == null || file.Length == 0)
+                // Kiểm tra request có file không
+                if (file == null)
                 {
                     return BadRequest(new { message = "Không có file được chọn" });
+                }
+
+                if (file.Length == 0)
+                {
+                    return BadRequest(new { message = "File rỗng" });
+                }
+
+                // Kiểm tra tên file
+                if (string.IsNullOrWhiteSpace(file.FileName))
+                {
+                    return BadRequest(new { message = "Tên file không hợp lệ" });
                 }
 
                 // Kiểm tra định dạng file
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                
+                if (string.IsNullOrEmpty(fileExtension))
+                {
+                    return BadRequest(new { message = "File không có phần mở rộng" });
+                }
+
                 if (!allowedExtensions.Contains(fileExtension))
                 {
-                    return BadRequest(new { message = "Định dạng file không được hỗ trợ. Chỉ chấp nhận: jpg, jpeg, png, gif, webp" });
+                    return BadRequest(new { message = $"Định dạng file không được hỗ trợ. Chỉ chấp nhận: {string.Join(", ", allowedExtensions)}" });
                 }
 
                 // Kiểm tra kích thước file (tối đa 5MB)
@@ -1875,6 +1934,7 @@ namespace ShopBanDoTheThao.Server.Controllers
     {
         [Required]
         public string TrangThai { get; set; } = string.Empty;
+        public string? TrangThaiThanhToan { get; set; }
         public string? LyDoHuy { get; set; }
     }
 
@@ -2809,6 +2869,540 @@ namespace ShopBanDoTheThao.Server.Controllers
                 return StatusCode(500, new { message = $"Lỗi khi tải danh sách thông báo: {ex.Message}" });
             }
         }
+
+        // ========== QUẢN LÝ HẠNG VIP ==========
+        [HttpGet("hangvip")]
+        public async Task<IActionResult> GetDanhSachHangVip()
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                // Kiểm tra xem bảng HangVip có tồn tại không
+                try
+                {
+                    var hangVip = await _context.HangVip
+                        .OrderBy(h => h.ThuTu)
+                        .ThenBy(h => h.DiemToiThieu)
+                        .Select(h => new
+                        {
+                            h.Id,
+                            h.Ten,
+                            h.MoTa,
+                            h.MauSac,
+                            h.Icon,
+                            h.DiemToiThieu,
+                            h.DiemToiDa,
+                            h.TiLeTichDiem,
+                            h.TiLeGiamGia,
+                            h.ThuTu,
+                            h.DangHoatDong,
+                            h.NgayTao
+                        })
+                        .ToListAsync();
+
+                    return Ok(hangVip);
+                }
+                catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+                {
+                    // Bảng có thể chưa tồn tại
+                    return Ok(new List<object>());
+                }
+                catch (Microsoft.Data.SqlClient.SqlException sqlEx)
+                {
+                    // Lỗi SQL - có thể bảng chưa tồn tại
+                    return Ok(new List<object>());
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log chi tiết lỗi
+                System.Diagnostics.Debug.WriteLine($"Lỗi khi tải danh sách hạng VIP: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                
+                return StatusCode(500, new { 
+                    message = $"Lỗi khi tải danh sách hạng VIP: {ex.Message}",
+                    details = ex.InnerException?.Message 
+                });
+            }
+        }
+
+        [HttpPost("hangvip")]
+        public async Task<IActionResult> TaoHangVip([FromBody] TaoHangVipRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var hangVip = new Models.HangVip
+                {
+                    Ten = request.Ten,
+                    MoTa = request.MoTa,
+                    MauSac = request.MauSac,
+                    Icon = request.Icon,
+                    DiemToiThieu = request.DiemToiThieu,
+                    DiemToiDa = request.DiemToiDa,
+                    TiLeTichDiem = request.TiLeTichDiem,
+                    TiLeGiamGia = request.TiLeGiamGia,
+                    ThuTu = request.ThuTu,
+                    DangHoatDong = request.DangHoatDong,
+                    NgayTao = DateTime.UtcNow
+                };
+
+                _context.HangVip.Add(hangVip);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Tạo hạng VIP thành công", data = hangVip });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tạo hạng VIP: {ex.Message}" });
+            }
+        }
+
+        [HttpPut("hangvip/{id}")]
+        public async Task<IActionResult> CapNhatHangVip(int id, [FromBody] CapNhatHangVipRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var hangVip = await _context.HangVip.FindAsync(id);
+                if (hangVip == null)
+                {
+                    return NotFound(new { message = "Hạng VIP không tồn tại" });
+                }
+
+                hangVip.Ten = request.Ten;
+                hangVip.MoTa = request.MoTa;
+                hangVip.MauSac = request.MauSac;
+                hangVip.Icon = request.Icon;
+                hangVip.DiemToiThieu = request.DiemToiThieu;
+                hangVip.DiemToiDa = request.DiemToiDa;
+                hangVip.TiLeTichDiem = request.TiLeTichDiem;
+                hangVip.TiLeGiamGia = request.TiLeGiamGia;
+                hangVip.ThuTu = request.ThuTu;
+                hangVip.DangHoatDong = request.DangHoatDong;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Cập nhật hạng VIP thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi cập nhật hạng VIP: {ex.Message}" });
+            }
+        }
+
+        [HttpDelete("hangvip/{id}")]
+        public async Task<IActionResult> XoaHangVip(int id)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var hangVip = await _context.HangVip.FindAsync(id);
+                if (hangVip == null)
+                {
+                    return NotFound(new { message = "Hạng VIP không tồn tại" });
+                }
+
+                // Kiểm tra xem có người dùng nào đang sử dụng hạng VIP này không
+                var soNguoiDung = await _context.NguoiDung.CountAsync(u => u.HangVipId == id);
+                if (soNguoiDung > 0)
+                {
+                    return BadRequest(new { message = $"Không thể xóa hạng VIP này vì có {soNguoiDung} người dùng đang sử dụng" });
+                }
+
+                _context.HangVip.Remove(hangVip);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Xóa hạng VIP thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi xóa hạng VIP: {ex.Message}" });
+            }
+        }
+
+        // ========== QUẢN LÝ VOUCHER ĐỔI ĐIỂM ==========
+        [HttpGet("voucherdoidiem")]
+        public async Task<IActionResult> GetDanhSachVoucherDoiDiem()
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var vouchers = await _context.VoucherDoiDiem
+                    .Include(v => v.MaGiamGia)
+                    .OrderBy(v => v.ThuTuHienThi)
+                    .ThenByDescending(v => v.NgayTao)
+                    .ToListAsync();
+
+                return Ok(vouchers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tải danh sách voucher: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("voucherdoidiem")]
+        public async Task<IActionResult> TaoVoucherDoiDiem([FromBody] TaoVoucherDoiDiemRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var voucher = new Models.VoucherDoiDiem
+                {
+                    Ten = request.Ten,
+                    MoTa = request.MoTa,
+                    HinhAnh = request.HinhAnh,
+                    SoDiemCanDoi = request.SoDiemCanDoi,
+                    LoaiVoucher = request.LoaiVoucher,
+                    MaGiamGiaId = request.MaGiamGiaId,
+                    LoaiGiamGia = request.LoaiGiamGia,
+                    GiaTriGiamGia = request.GiaTriGiamGia,
+                    GiaTriDonHangToiThieu = request.GiaTriDonHangToiThieu,
+                    GiaTriGiamGiaToiDa = request.GiaTriGiamGiaToiDa,
+                    SoLuong = request.SoLuong,
+                    SoLuongDaDoi = 0,
+                    NgayBatDau = request.NgayBatDau,
+                    NgayKetThuc = request.NgayKetThuc,
+                    DangHoatDong = request.DangHoatDong,
+                    ThuTuHienThi = request.ThuTuHienThi,
+                    NgayTao = DateTime.UtcNow
+                };
+
+                _context.VoucherDoiDiem.Add(voucher);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Tạo voucher thành công", data = voucher });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tạo voucher: {ex.Message}" });
+            }
+        }
+
+        [HttpPut("voucherdoidiem/{id}")]
+        public async Task<IActionResult> CapNhatVoucherDoiDiem(int id, [FromBody] CapNhatVoucherDoiDiemRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var voucher = await _context.VoucherDoiDiem.FindAsync(id);
+                if (voucher == null)
+                {
+                    return NotFound(new { message = "Voucher không tồn tại" });
+                }
+
+                voucher.Ten = request.Ten;
+                voucher.MoTa = request.MoTa;
+                voucher.HinhAnh = request.HinhAnh;
+                voucher.SoDiemCanDoi = request.SoDiemCanDoi;
+                voucher.LoaiVoucher = request.LoaiVoucher;
+                voucher.MaGiamGiaId = request.MaGiamGiaId;
+                voucher.LoaiGiamGia = request.LoaiGiamGia;
+                voucher.GiaTriGiamGia = request.GiaTriGiamGia;
+                voucher.GiaTriDonHangToiThieu = request.GiaTriDonHangToiThieu;
+                voucher.GiaTriGiamGiaToiDa = request.GiaTriGiamGiaToiDa;
+                voucher.SoLuong = request.SoLuong;
+                voucher.NgayBatDau = request.NgayBatDau;
+                voucher.NgayKetThuc = request.NgayKetThuc;
+                voucher.DangHoatDong = request.DangHoatDong;
+                voucher.ThuTuHienThi = request.ThuTuHienThi;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Cập nhật voucher thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi cập nhật voucher: {ex.Message}" });
+            }
+        }
+
+        [HttpDelete("voucherdoidiem/{id}")]
+        public async Task<IActionResult> XoaVoucherDoiDiem(int id)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var voucher = await _context.VoucherDoiDiem.FindAsync(id);
+                if (voucher == null)
+                {
+                    return NotFound(new { message = "Voucher không tồn tại" });
+                }
+
+                _context.VoucherDoiDiem.Remove(voucher);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Xóa voucher thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi xóa voucher: {ex.Message}" });
+            }
+        }
+
+        // ========== QUẢN LÝ MINIGAME ==========
+        [HttpGet("minigame")]
+        public async Task<IActionResult> GetDanhSachMinigame()
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var minigames = await _context.Minigame
+                    .OrderByDescending(m => m.NgayTao)
+                    .ToListAsync();
+
+                return Ok(minigames);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tải danh sách minigame: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("minigame")]
+        public async Task<IActionResult> TaoMinigame([FromBody] TaoMinigameRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var minigame = new Models.Minigame
+                {
+                    Ten = request.Ten,
+                    MoTa = request.MoTa,
+                    LoaiGame = request.LoaiGame,
+                    HinhAnh = request.HinhAnh,
+                    SoDiemCanThi = request.SoDiemCanThi,
+                    SoLanChoiToiDa = request.SoLanChoiToiDa,
+                    DangHoatDong = request.DangHoatDong,
+                    NgayBatDau = request.NgayBatDau,
+                    NgayKetThuc = request.NgayKetThuc,
+                    NgayTao = DateTime.UtcNow
+                };
+
+                _context.Minigame.Add(minigame);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Tạo minigame thành công", data = minigame });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tạo minigame: {ex.Message}" });
+            }
+        }
+
+        [HttpPut("minigame/{id}")]
+        public async Task<IActionResult> CapNhatMinigame(int id, [FromBody] CapNhatMinigameRequest request)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var minigame = await _context.Minigame.FindAsync(id);
+                if (minigame == null)
+                {
+                    return NotFound(new { message = "Minigame không tồn tại" });
+                }
+
+                minigame.Ten = request.Ten;
+                minigame.MoTa = request.MoTa;
+                minigame.LoaiGame = request.LoaiGame;
+                minigame.HinhAnh = request.HinhAnh;
+                minigame.SoDiemCanThi = request.SoDiemCanThi;
+                minigame.SoLanChoiToiDa = request.SoLanChoiToiDa;
+                minigame.DangHoatDong = request.DangHoatDong;
+                minigame.NgayBatDau = request.NgayBatDau;
+                minigame.NgayKetThuc = request.NgayKetThuc;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Cập nhật minigame thành công" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi cập nhật minigame: {ex.Message}" });
+            }
+        }
+
+        [HttpDelete("minigame/{id}")]
+        public async Task<IActionResult> XoaMinigame(int id)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var minigame = await _context.Minigame.FindAsync(id);
+                if (minigame == null)
+                {
+                    return NotFound(new { message = "Minigame không tồn tại" });
+                }
+
+                // Xóa tất cả kết quả minigame liên quan trước
+                var ketQuaMinigames = await _context.KetQuaMinigame
+                    .Where(k => k.MinigameId == id)
+                    .ToListAsync();
+                
+                if (ketQuaMinigames.Any())
+                {
+                    _context.KetQuaMinigame.RemoveRange(ketQuaMinigames);
+                }
+
+                // Set null cho LichSuDiem liên quan (đã được cấu hình SetNull trong DbContext)
+                var lichSuDiems = await _context.LichSuDiem
+                    .Where(l => l.MinigameId == id)
+                    .ToListAsync();
+                
+                foreach (var lichSu in lichSuDiems)
+                {
+                    lichSu.MinigameId = null;
+                }
+
+                // Xóa minigame
+                _context.Minigame.Remove(minigame);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Xóa minigame thành công" });
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                // Log chi tiết lỗi database
+                var innerMessage = dbEx.InnerException?.Message ?? dbEx.Message;
+                System.Diagnostics.Debug.WriteLine($"Lỗi database khi xóa minigame: {innerMessage}");
+                return StatusCode(500, new { message = $"Lỗi khi xóa minigame: {innerMessage}" });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Lỗi khi xóa minigame: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = $"Lỗi khi xóa minigame: {ex.Message}", details = ex.InnerException?.Message });
+            }
+        }
+
+        // ========== XEM LỊCH SỬ ĐIỂM ==========
+        [HttpGet("lichsudiem")]
+        public async Task<IActionResult> GetLichSuDiem(
+            [FromQuery] int? nguoiDungId,
+            [FromQuery] string? loai,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                if (!await IsAdminAsync())
+                {
+                    return Forbid();
+                }
+
+                var query = _context.LichSuDiem
+                    .Include(l => l.NguoiDung)
+                    .Include(l => l.DonHang)
+                    .Include(l => l.VoucherDoiDiem)
+                    .Include(l => l.Minigame)
+                    .AsQueryable();
+
+                if (nguoiDungId.HasValue)
+                {
+                    query = query.Where(l => l.NguoiDungId == nguoiDungId.Value);
+                }
+
+                if (!string.IsNullOrEmpty(loai))
+                {
+                    query = query.Where(l => l.Loai == loai);
+                }
+
+                var total = await query.CountAsync();
+                var lichSu = await query
+                    .OrderByDescending(l => l.NgayTao)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(l => new
+                    {
+                        l.Id,
+                        l.NguoiDungId,
+                        NguoiDung = new { l.NguoiDung.Ho, l.NguoiDung.Ten, l.NguoiDung.Email },
+                        l.Loai,
+                        l.MoTa,
+                        l.SoDiem,
+                        l.DiemTruoc,
+                        l.DiemSau,
+                        l.DonHangId,
+                        DonHang = l.DonHang != null ? new { l.DonHang.MaDonHang } : null,
+                        l.VoucherDoiDiemId,
+                        VoucherDoiDiem = l.VoucherDoiDiem != null ? new { l.VoucherDoiDiem.Ten } : null,
+                        l.MinigameId,
+                        Minigame = l.Minigame != null ? new { l.Minigame.Ten } : null,
+                        l.GhiChu,
+                        l.NgayTao
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    Data = lichSu,
+                    TotalCount = total,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(total / (double)pageSize)
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tải lịch sử điểm: {ex.Message}" });
+            }
+        }
     }
 
     public class TaoBannerRequest
@@ -2913,6 +3507,145 @@ namespace ShopBanDoTheThao.Server.Controllers
     {
         [Required]
         public bool HienThi { get; set; }
+    }
+
+    // ========== REQUEST CLASSES CHO HỆ THỐNG ĐIỂM ==========
+    public class TaoHangVipRequest
+    {
+        [Required]
+        [MaxLength(50)]
+        public string Ten { get; set; } = string.Empty;
+        [MaxLength(200)]
+        public string? MoTa { get; set; }
+        [MaxLength(50)]
+        public string? MauSac { get; set; }
+        [MaxLength(500)]
+        public string? Icon { get; set; }
+        [Required]
+        public int DiemToiThieu { get; set; }
+        public int DiemToiDa { get; set; } = int.MaxValue;
+        [Required]
+        public decimal TiLeTichDiem { get; set; } = 1.0m;
+        public decimal TiLeGiamGia { get; set; } = 0;
+        public int ThuTu { get; set; } = 0;
+        public bool DangHoatDong { get; set; } = true;
+    }
+
+    public class CapNhatHangVipRequest
+    {
+        [Required]
+        [MaxLength(50)]
+        public string Ten { get; set; } = string.Empty;
+        [MaxLength(200)]
+        public string? MoTa { get; set; }
+        [MaxLength(50)]
+        public string? MauSac { get; set; }
+        [MaxLength(500)]
+        public string? Icon { get; set; }
+        [Required]
+        public int DiemToiThieu { get; set; }
+        public int DiemToiDa { get; set; } = int.MaxValue;
+        [Required]
+        public decimal TiLeTichDiem { get; set; } = 1.0m;
+        public decimal TiLeGiamGia { get; set; } = 0;
+        public int ThuTu { get; set; } = 0;
+        public bool DangHoatDong { get; set; } = true;
+    }
+
+    public class TaoVoucherDoiDiemRequest
+    {
+        [Required]
+        [MaxLength(100)]
+        public string Ten { get; set; } = string.Empty;
+        [MaxLength(500)]
+        public string? MoTa { get; set; }
+        [MaxLength(500)]
+        public string? HinhAnh { get; set; }
+        [Required]
+        public int SoDiemCanDoi { get; set; }
+        [Required]
+        [MaxLength(50)]
+        public string LoaiVoucher { get; set; } = "MaGiamGia";
+        public int? MaGiamGiaId { get; set; }
+        [MaxLength(50)]
+        public string? LoaiGiamGia { get; set; }
+        public decimal? GiaTriGiamGia { get; set; }
+        public decimal? GiaTriDonHangToiThieu { get; set; }
+        public decimal? GiaTriGiamGiaToiDa { get; set; }
+        public int SoLuong { get; set; } = 0;
+        [Required]
+        public DateTime NgayBatDau { get; set; } = DateTime.UtcNow;
+        public DateTime? NgayKetThuc { get; set; }
+        public bool DangHoatDong { get; set; } = true;
+        public int ThuTuHienThi { get; set; } = 0;
+    }
+
+    public class CapNhatVoucherDoiDiemRequest
+    {
+        [Required]
+        [MaxLength(100)]
+        public string Ten { get; set; } = string.Empty;
+        [MaxLength(500)]
+        public string? MoTa { get; set; }
+        [MaxLength(500)]
+        public string? HinhAnh { get; set; }
+        [Required]
+        public int SoDiemCanDoi { get; set; }
+        [Required]
+        [MaxLength(50)]
+        public string LoaiVoucher { get; set; } = "MaGiamGia";
+        public int? MaGiamGiaId { get; set; }
+        [MaxLength(50)]
+        public string? LoaiGiamGia { get; set; }
+        public decimal? GiaTriGiamGia { get; set; }
+        public decimal? GiaTriDonHangToiThieu { get; set; }
+        public decimal? GiaTriGiamGiaToiDa { get; set; }
+        public int SoLuong { get; set; } = 0;
+        [Required]
+        public DateTime NgayBatDau { get; set; } = DateTime.UtcNow;
+        public DateTime? NgayKetThuc { get; set; }
+        public bool DangHoatDong { get; set; } = true;
+        public int ThuTuHienThi { get; set; } = 0;
+    }
+
+    public class TaoMinigameRequest
+    {
+        [Required]
+        [MaxLength(100)]
+        public string Ten { get; set; } = string.Empty;
+        [MaxLength(500)]
+        public string? MoTa { get; set; }
+        [Required]
+        [MaxLength(50)]
+        public string LoaiGame { get; set; } = "VongQuay";
+        [MaxLength(500)]
+        public string? HinhAnh { get; set; }
+        public int SoDiemCanThi { get; set; } = 0;
+        public int SoLanChoiToiDa { get; set; } = 1;
+        public bool DangHoatDong { get; set; } = true;
+        [Required]
+        public DateTime NgayBatDau { get; set; } = DateTime.UtcNow;
+        public DateTime? NgayKetThuc { get; set; }
+    }
+
+    public class CapNhatMinigameRequest
+    {
+        [Required]
+        [MaxLength(100)]
+        public string Ten { get; set; } = string.Empty;
+        [MaxLength(500)]
+        public string? MoTa { get; set; }
+        [Required]
+        [MaxLength(50)]
+        public string LoaiGame { get; set; } = "VongQuay";
+        [MaxLength(500)]
+        public string? HinhAnh { get; set; }
+        public int SoDiemCanThi { get; set; } = 0;
+        public int SoLanChoiToiDa { get; set; } = 1;
+        public bool DangHoatDong { get; set; } = true;
+        [Required]
+        public DateTime NgayBatDau { get; set; } = DateTime.UtcNow;
+        public DateTime? NgayKetThuc { get; set; }
     }
 }
 

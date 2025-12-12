@@ -83,7 +83,7 @@ namespace ShopBanDoTheThao.Server.Controllers
                     return Ok(new { message = "Mã giảm giá chưa có hiệu lực", valid = false });
                 }
 
-                if (maGiamGia.NgayKetThuc < nowUtc)
+                if (maGiamGia.NgayKetThuc.HasValue && maGiamGia.NgayKetThuc.Value < nowUtc)
                 {
                     return Ok(new { message = "Mã giảm giá đã hết hạn", valid = false });
                 }

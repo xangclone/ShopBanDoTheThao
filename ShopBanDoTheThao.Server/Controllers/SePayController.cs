@@ -181,6 +181,9 @@ namespace ShopBanDoTheThao.Server.Controllers
                     
                     await _context.SaveChangesAsync();
 
+                    // Tích điểm khi thanh toán thành công
+                    await Helpers.DiemHelper.TichDiemKhiThanhToan(_context, donHang.Id);
+
                     // Tạo thông báo cho người dùng
                     await Helpers.ThongBaoHelper.TaoThongBaoDonHang(_context, donHang.Id, donHang.NguoiDungId, "", "DaXacNhan");
 

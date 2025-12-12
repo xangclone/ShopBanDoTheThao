@@ -442,8 +442,12 @@ function QuanLyDonHang() {
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <span>Thuế VAT:</span>
-                        <span>{formatPrice(chiTietDonHang.thue)}</span>
+                        {chiTietDonHang.thue > 0 && (
+                          <>
+                            <span>Thuế VAT:</span>
+                            <span>{formatPrice(chiTietDonHang.thue)}</span>
+                          </>
+                        )}
                       </div>
                       <div className="border-t border-white/30 pt-2 flex justify-between font-bold text-lg">
                         <span>Tổng cộng:</span>

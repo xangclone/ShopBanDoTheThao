@@ -80,6 +80,21 @@ function QuanLyBanner() {
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Kiểm tra kích thước file (tối đa 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Kích thước file quá lớn. Tối đa 5MB');
+        e.target.value = ''; // Reset input
+        return;
+      }
+
+      // Kiểm tra định dạng file
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Định dạng file không được hỗ trợ. Chỉ chấp nhận: JPG, PNG, GIF, WEBP');
+        e.target.value = ''; // Reset input
+        return;
+      }
+
       setImageFile(file);
       // Tạo preview từ file local
       const previewUrl = URL.createObjectURL(file);
@@ -97,10 +112,13 @@ function QuanLyBanner() {
         if (uploadedImage.url || uploadedImage.path) {
           setImagePreview(uploadedImage.url || uploadedImage.path);
         }
+        toast.success('Upload ảnh thành công');
       } catch (error) {
         console.error('Lỗi upload ảnh:', error);
-        toast.error(error.response?.data?.message || 'Không thể tải ảnh lên');
+        const errorMessage = error.response?.data?.message || error.message || 'Không thể tải ảnh lên';
+        toast.error(errorMessage);
         // Giữ preview từ file local nếu upload thất bại
+        // Không reset input để user có thể thử lại
       }
     }
   };

@@ -25,7 +25,17 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:61620", "https://localhost:61620")
+        // Thêm URL ngrok của frontend vào đây khi chia sẻ local
+        // Ví dụ: "https://xyz789.ngrok-free.app"
+        var allowedOrigins = new[]
+        {
+            "http://localhost:61620",
+            "https://localhost:61620",
+            "https://sejant-cunicular-kristen.ngrok-free.dev/"
+            // Thêm URL ngrok ở đây: "https://your-ngrok-url.ngrok-free.app"
+        };
+        
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

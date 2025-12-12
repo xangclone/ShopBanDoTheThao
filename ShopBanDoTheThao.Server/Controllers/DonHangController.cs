@@ -264,39 +264,80 @@ namespace ShopBanDoTheThao.Server.Controllers
                     tongTienSanPham += giaBan * item.SoLuong;
                 }
 
+                // Lấy thông tin người dùng kèm hạng VIP
+                var nguoiDung = await _context.NguoiDung
+                    .Include(u => u.HangVip)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (nguoiDung == null)
+                {
+                    return BadRequest(new { message = "Không tìm thấy thông tin người dùng" });
+                }
+
                 decimal giamGia = 0;
                 if (!string.IsNullOrEmpty(request.MaGiamGia))
                 {
-                    // Chuyển giờ VN sang UTC để so sánh với DB (DB lưu UTC)
-                    var nowVietnam = DateTimeHelper.GetVietnamTime();
-                    var nowUtc = DateTimeHelper.ToUtcTime(nowVietnam);
-                    var maGiamGia = await _context.MaGiamGia
-                        .FirstOrDefaultAsync(m => m.Ma == request.MaGiamGia && 
-                                                 m.DangHoatDong &&
-                                                 m.NgayBatDau <= nowUtc &&
-                                                 m.NgayKetThuc >= nowUtc);
-
-                    if (maGiamGia != null && 
-                        (maGiamGia.SoLuongSuDung == null || maGiamGia.SoLuongDaSuDung < maGiamGia.SoLuongSuDung))
+                    try
                     {
-                        if (maGiamGia.LoaiGiamGia == "PhanTram")
+                        // Chuyển giờ VN sang UTC để so sánh với DB (DB lưu UTC)
+                        var nowVietnam = DateTimeHelper.GetVietnamTime();
+                        var nowUtc = DateTimeHelper.ToUtcTime(nowVietnam);
+                        var maGiamGia = await _context.MaGiamGia
+                            .FirstOrDefaultAsync(m => m.Ma == request.MaGiamGia && 
+                                                     m.DangHoatDong &&
+                                                     m.NgayBatDau <= nowUtc &&
+                                                     (m.NgayKetThuc == null || m.NgayKetThuc >= nowUtc));
+
+                        if (maGiamGia != null && 
+                            (maGiamGia.SoLuongSuDung == null || maGiamGia.SoLuongDaSuDung < maGiamGia.SoLuongSuDung))
                         {
-                            giamGia = tongTienSanPham * (maGiamGia.GiaTriGiamGia / 100);
-                            if (maGiamGia.GiaTriGiamGiaToiDa.HasValue && giamGia > maGiamGia.GiaTriGiamGiaToiDa.Value)
+                            if (maGiamGia.LoaiGiamGia == "PhanTram")
                             {
-                                giamGia = maGiamGia.GiaTriGiamGiaToiDa.Value;
+                                giamGia = tongTienSanPham * (maGiamGia.GiaTriGiamGia / 100);
+                                if (maGiamGia.GiaTriGiamGiaToiDa.HasValue && giamGia > maGiamGia.GiaTriGiamGiaToiDa.Value)
+                                {
+                                    giamGia = maGiamGia.GiaTriGiamGiaToiDa.Value;
+                                }
+                            }
+                            else
+                            {
+                                giamGia = maGiamGia.GiaTriGiamGia;
                             }
                         }
-                        else
-                        {
-                            giamGia = maGiamGia.GiaTriGiamGia;
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log lỗi nhưng tiếp tục xử lý (không áp dụng mã giảm giá)
+                        System.Diagnostics.Debug.WriteLine($"Lỗi khi xử lý mã giảm giá: {ex.Message}");
                     }
                 }
 
+                // Áp dụng chiết khấu VIP (sau mã giảm giá)
+                decimal giamGiaVip = 0;
+                try
+                {
+                    if (nguoiDung.HangVip != null && nguoiDung.HangVip.TiLeGiamGia > 0)
+                    {
+                        // Tính chiết khấu VIP dựa trên tổng tiền sau mã giảm giá
+                        var tienSauMaGiamGia = tongTienSanPham - giamGia;
+                        if (tienSauMaGiamGia > 0)
+                        {
+                            giamGiaVip = tienSauMaGiamGia * (nguoiDung.HangVip.TiLeGiamGia / 100m);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log lỗi nhưng tiếp tục xử lý (không áp dụng chiết khấu VIP)
+                    System.Diagnostics.Debug.WriteLine($"Lỗi khi tính chiết khấu VIP: {ex.Message}");
+                }
+
+                // Tổng giảm giá = mã giảm giá + chiết khấu VIP
+                decimal tongGiamGia = giamGia + giamGiaVip;
+
                 decimal phiVanChuyen = request.PhiVanChuyen;
-                decimal thue = (tongTienSanPham - giamGia) * 0.1m; // 10% VAT
-                decimal tongTien = tongTienSanPham - giamGia + phiVanChuyen + thue;
+                decimal thue = 0; // Bỏ VAT
+                decimal tongTien = tongTienSanPham - tongGiamGia + phiVanChuyen; // Bỏ VAT
 
                 // Tạo đơn hàng
                 var donHang = new Models.DonHang
@@ -307,7 +348,7 @@ namespace ShopBanDoTheThao.Server.Controllers
                     PhuongThucThanhToanId = request.PhuongThucThanhToanId,
                     TongTienSanPham = tongTienSanPham,
                     PhiVanChuyen = phiVanChuyen,
-                    GiamGia = giamGia,
+                    GiamGia = tongGiamGia, // Tổng giảm giá bao gồm cả mã giảm giá và chiết khấu VIP
                     Thue = thue,
                     TongTien = tongTien,
                     MaGiamGia = request.MaGiamGia,
