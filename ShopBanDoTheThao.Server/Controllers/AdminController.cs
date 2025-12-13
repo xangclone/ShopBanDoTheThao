@@ -776,6 +776,11 @@ namespace ShopBanDoTheThao.Server.Controllers
         {
             try
             {
+                if (string.IsNullOrEmpty(request.Slug))
+                {
+        // Cách lười: Tạo slug bằng Tên + Mã ngẫu nhiên để không bao giờ trùng
+        request.Slug = request.Ten.Replace(" ", "-") + "-" + Guid.NewGuid().ToString();
+                }
                 if (!await IsAdminAsync())
                 {
                     return Forbid();

@@ -100,7 +100,7 @@ function QuanLyKho() {
         sku: item.sku || '',
         soLuongTon: item.soLuongTon || 0,
         gia: item.gia || null,
-        hinhAnhChinh: item.hinhAnhChinh || '',
+        hinhAnh: item.hinhAnh || '',
         dangHoatDong: item.dangHoatDong ?? true,
       });
       setEditingId(item.id);
