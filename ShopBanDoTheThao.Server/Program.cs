@@ -82,6 +82,7 @@ builder.Services.Configure<FormOptions>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+    c.CustomSchemaIds(type => type.ToString().Replace("+", "."));
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Shop Ban Do The Thao API",
@@ -118,6 +119,7 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+    
 });
 
 var app = builder.Build();

@@ -1833,7 +1833,7 @@ namespace ShopBanDoTheThao.Server.Controllers
 
         [HttpPost("upload")]
         [RequestSizeLimit(5242880)] // 5MB
-        public async Task<IActionResult> UploadImage([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadImage( IFormFile file)
         {
             try
             {
@@ -1966,6 +1966,7 @@ namespace ShopBanDoTheThao.Server.Controllers
         public bool DangKhuyenMai { get; set; } = false;
         public bool SanPhamNoiBat { get; set; } = false;
         public List<BienTheRequest>? DanhSachBienThe { get; set; }
+        
     }
 
     public class CapNhatSanPhamRequest
